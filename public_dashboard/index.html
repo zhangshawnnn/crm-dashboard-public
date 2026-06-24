@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金融市场客户行业画像看板 · 2026年6月</title>
+<script src="chart.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa; color: #1f2937; line-height: 1.6;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  /* 头部 */
+  .header {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white; padding: 32px 28px; border-radius: 12px;
+    margin-bottom: 24px; box-shadow: 0 4px 12px rgba(30,64,175,0.15);
+  }
+  .header h1 { font-size: 26px; font-weight: 600; margin-bottom: 8px; }
+  .header .subtitle { font-size: 14px; opacity: 0.9; }
+  .header .period { display:inline-block; background:rgba(255,255,255,0.2); padding:4px 12px; border-radius:16px; font-size:12px; margin-top:8px; }
+
+  /* 总览指标卡 */
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+  }
+  .metric-card {
+    background: white; padding: 20px; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #3b82f6;
+  }
+  .metric-card .label { font-size: 13px; color: #6b7280; margin-bottom: 6px; }
+  .metric-card .value { font-size: 28px; font-weight: 700; color: #1f2937; }
+  .metric-card .unit { font-size: 14px; color: #6b7280; font-weight: 400; margin-left: 4px; }
+  .metric-card .sub { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+  .metric-card.warn { border-left-color: #ef4444; }
+  .metric-card.warn .value { color: #dc2626; }
+
+  /* 区块标题 */
+  .section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .section-title {
+    font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .bar { width: 4px; height: 18px; background: #3b82f6; border-radius: 2px; }
+
+  /* 图表容器 */
+  .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .chart-box { background: #fafbfc; border-radius: 8px; padding: 16px; border: 1px solid #e5e7eb; }
+  .chart-box h4 { font-size: 14px; color: #374151; margin-bottom: 12px; font-weight: 600; }
+  .chart-canvas-wrap { position: relative; height: 240px; }
+
+  /* 群组画像卡 */
+  .group-card {
+    background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-top: 4px solid {{g_color}};
+  }
+  .group-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;
+  }
+  .group-header .title-wrap h3 { font-size: 18px; font-weight: 600; color: #1f2937; }
+  .group-header .positioning { font-size: 13px; color: #6b7280; margin-top: 4px; }
+  .group-header .badge {
+    background: {{g_color}}22; color: {{g_color}};
+    padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600;
+  }
+
+  .group-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-item { background: #fafbfc; padding: 12px; border-radius: 6px; text-align: center; }
+  .stat-item .v { font-size: 18px; font-weight: 700; color: #1f2937; }
+  .stat-item .v.small { font-size: 14px; }
+  .stat-item .l { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .group-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px; }
+  .detail-block h5 { font-size: 13px; color: #374151; font-weight: 600; margin-bottom: 8px; }
+
+  .progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+  .progress-row .name { width: 80px; color: #4b5563; }
+  .progress-row .bar-wrap { flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden; }
+  .progress-row .bar { height: 100%; background: {{g_color}}; border-radius: 4px; }
+  .progress-row .pct { width: 40px; text-align: right; color: #6b7280; font-weight: 600; }
+  .product-row {
+    width: 100%; border: 0; background: transparent; cursor: pointer; padding: 4px 6px;
+    border-radius: 6px; font-family: inherit;
+  }
+  .product-row:hover { background: #eff6ff; }
+  .product-row:focus { outline: 2px solid #bfdbfe; outline-offset: 1px; }
+  .product-row .name { font-weight: 600; color: #374151; text-align: left; }
+  .product-row .pct { color: #1d4ed8; }
+
+  .top5-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .top5-table th { background: #f3f4f6; padding: 6px 8px; text-align: left; color: #374151; font-weight: 600; border-bottom: 1px solid #e5e7eb; }
+  .top5-table td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; color: #4b5563; }
+  .top5-table td.num { text-align: right; font-family: Consolas, monospace; }
+
+  .advice-box {
+    background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px;
+    border-radius: 6px; margin-top: 12px;
+  }
+  .advice-box h5 { font-size: 13px; color: #92400e; margin-bottom: 6px; font-weight: 600; }
+  .advice-box ul { list-style: none; }
+  .advice-box li { font-size: 13px; color: #78350f; margin-bottom: 4px; padding-left: 14px; position: relative; }
+  .advice-box li:before { content: "▸"; position: absolute; left: 0; color: #f59e0b; }
+
+  .product-tag {
+    display: inline-block; background: {{g_color}}15; color: {{g_color}};
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-right: 6px; margin-bottom: 4px;
+  }
+
+  .opp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .opp-stat { background: #fef2f2; padding: 8px; border-radius: 4px; text-align: center; }
+  .opp-stat .v { font-size: 16px; font-weight: 700; color: #b91c1c; }
+  .opp-stat .l { font-size: 10px; color: #991b1b; }
+
+  /* 热力图 */
+  .heatmap-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .heatmap-table th { background: #f3f4f6; padding: 10px; text-align: center; color: #374151; font-weight: 600; border: 1px solid #e5e7eb; }
+  .heatmap-table td { padding: 10px; text-align: center; border: 1px solid #e5e7eb; font-weight: 600; }
+  .heatmap-table td.group-name { text-align: left; background: #fafbfc; font-weight: 600; color: #1f2937; }
+  .heatmap-cell { color: white; }
+
+  /* 导航 */
+  .nav { position: sticky; top: 0; background: white; z-index: 100; padding: 12px 24px; margin: -24px -24px 24px -24px; border-bottom: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+  .nav a { color: #3b82f6; text-decoration: none; font-size: 13px; margin-right: 16px; padding: 4px 10px; border-radius: 4px; }
+  .nav a:hover { background: #eff6ff; }
+
+  .footer { text-align: center; color: #9ca3af; font-size: 12px; padding: 20px; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.48);
+    display: none; align-items: center; justify-content: center; z-index: 1000;
+    padding: 24px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    width: min(1180px, 96vw); max-height: 88vh; background: white; border-radius: 8px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24); display: flex; flex-direction: column;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding: 16px 18px; border-bottom: 1px solid #e5e7eb;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #111827; }
+  .modal-close {
+    width: 32px; height: 32px; border: 0; border-radius: 6px; background: #f3f4f6;
+    color: #374151; cursor: pointer; font-size: 20px; line-height: 1;
+  }
+  .modal-close:hover { background: #e5e7eb; }
+  .modal-body { padding: 16px 18px; overflow: auto; }
+  .customer-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 980px; }
+  .customer-table th {
+    position: sticky; top: 0; background: #f3f4f6; z-index: 1;
+    padding: 8px; text-align: left; color: #374151; border-bottom: 1px solid #d1d5db;
+  }
+  .customer-table td { padding: 8px; border-bottom: 1px solid #edf0f3; color: #4b5563; vertical-align: top; }
+  .customer-table td.num { text-align: right; font-family: Consolas, monospace; white-space: nowrap; }
+  .customer-table td.wrap { white-space: normal; word-break: break-word; max-width: 220px; }
+  .empty-detail { padding: 28px; text-align: center; color: #6b7280; background: #f9fafb; border-radius: 6px; }
+
+  @media (max-width: 900px) {
+    .container { padding: 14px; }
+    .nav {
+      margin: -14px -14px 16px -14px; padding: 10px 14px;
+      overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+    }
+    .nav a { display: inline-block; margin-right: 8px; }
+    .header { padding: 22px 18px; border-radius: 8px; }
+    .header h1 { font-size: 22px; }
+    .overview-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .metric-card { padding: 14px; border-radius: 8px; }
+    .metric-card .value { font-size: 22px; }
+    .section, .group-card { padding: 16px; border-radius: 8px; }
+    .chart-grid { grid-template-columns: 1fr; gap: 14px; }
+    .chart-canvas-wrap { height: 220px; }
+    .group-header { display: block; }
+    .group-header .badge { display: inline-block; margin-top: 10px; }
+    .group-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .group-detail { grid-template-columns: 1fr; gap: 14px; }
+    .opp-stats { grid-template-columns: repeat(2, 1fr); }
+    .top5-table, .heatmap-table { min-width: 720px; }
+    .detail-block:has(.top5-table), #heatmap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .modal-overlay { align-items: stretch; padding: 0; }
+    .modal { width: 100vw; height: 100vh; max-height: none; border-radius: 0; }
+    .modal-header { padding: 14px; }
+    .modal-body { padding: 12px; }
+    .customer-table { min-width: 920px; font-size: 11px; }
+  }
+
+  @media (max-width: 560px) {
+    .container { padding: 10px; }
+    .nav { margin: -10px -10px 14px -10px; }
+    .overview-grid, .chart-grid, .group-detail, .opp-stats { grid-template-columns: 1fr; }
+    .group-stats { grid-template-columns: repeat(2, 1fr); }
+    .header h1 { font-size: 20px; }
+    .header .subtitle { font-size: 13px; }
+    .section-title { font-size: 16px; }
+    .progress-row .name { width: 72px; }
+    .progress-row .pct { width: 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 导航 -->
+  <div class="nav">
+    <a href="#overview">📊 总览</a>
+    
+    <a href="#G1-贸易批发类">G1 贸易批发类</a>
+    
+    <a href="#G2-装备制造类">G2 装备制造类</a>
+    
+    <a href="#G3-消费品制造类">G3 消费品制造类</a>
+    
+    <a href="#G4-高端制造电子类">G4 高端制造电子类</a>
+    
+    <a href="#G5-化工医药类">G5 化工医药类</a>
+    
+    <a href="#G6-物流代理类">G6 物流代理类</a>
+    
+    <a href="#G7-服务业类">G7 服务业类</a>
+    
+    <a href="#G8-长尾其他类">G8 长尾其他类</a>
+    
+    <a href="#heatmap">🔥 商机热力图</a>
+  </div>
+
+  <!-- 头部 -->
+  <div class="header">
+    <h1>金融市场客户行业画像看板</h1>
+    <div class="subtitle">基于「行业小类」字段构建的8个营销群组画像 · 识别商机 · 支撑日常营销 · <b>收益口径：仅统计衍生业务收益</b></div>
+    <div class="period">统计区间：2026-06-01 至 2026-06-23 · 数据源：6月crm测试.xlsx</div>
+  </div>
+
+  <!-- 总览指标 -->
+  <div class="overview-grid" id="overview">
+    <div class="metric-card">
+      <div class="label">客户总数</div>
+      <div class="value">5353<span class="unit">户</span></div>
+      <div class="sub">覆盖50个行业小类 → 8个营销群组</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">外汇交易量合计</div>
+      <div class="value">26.11<span class="unit">亿美元</span></div>
+      <div class="sub">即期 + 衍生业务</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">衍生业务收益</div>
+      <div class="value">1031.7<span class="unit">万元</span></div>
+      <div class="sub">仅统计衍生业务利润 · 449 户有贡献</div>
+    </div>
+    <div class="metric-card warn">
+      <div class="label">商机客户数</div>
+      <div class="value">5346<span class="unit">户</span></div>
+      <div class="sub">含金管家空户 5265 户</div>
+    </div>
+  </div>
+
+  <!-- 总览图表 -->
+  <div class="section">
+    <div class="section-title"><span class="bar"></span>群组对比总览</div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h4>客户数分布（户）</h4>
+        <div class="chart-canvas-wrap"><canvas id="chart-customer"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h4>外汇交易量（亿美元）</h4>
+        <div class="chart-canvas-wrap"><canvas id="chart-volume"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h4>衍生业务收益（万元）</h4>
+        <div class="chart-canvas-wrap"><canvas id="chart-revenue"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h4>衍生品渗透率（%）</h4>
+        <div class="chart-canvas-wrap"><canvas id="chart-deriv"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8张群组画像卡 -->
+  
+  <div class="group-card" id="G1-贸易批发类" style="border-top-color: #3b82f6;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G1 贸易批发类</h3>
+        <div class="positioning">主力盘：客户量大、即汇通为主，是基本盘</div>
+      </div>
+      <div class="badge" style="background: #3b82f622; color: #3b82f6;">3431 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">3431</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">17.586</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">744.8</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">2171.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">52</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">276</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G1-贸易批发类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.972894199941708%; background: #10b981;"></div></div>
+          <span class="pct">102户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G1-贸易批发类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 3.672398717575051%; background: #f59e0b;"></div></div>
+          <span class="pct">126户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G1-贸易批发类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.757796560769455%; background: #8b5cf6;"></div></div>
+          <span class="pct">26户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G1-贸易批发类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.4371903235208394%; background: #ec4899;"></div></div>
+          <span class="pct">15户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 88.3%; background: #3b82f6;"></div></div>
+          <span class="pct">88.3%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.1%; background: #ef4444;"></div></div>
+          <span class="pct">2.1%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 5.5%; background: #10b981;"></div></div>
+          <span class="pct">5.5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.0%; background: #9ca3af;"></div></div>
+          <span class="pct">4.0%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>1179.2</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波德业变频国际贸易有限公司</td><td>总行营业部</td><td>战略客户</td>
+            <td class="num">13,270.4</td>
+            <td class="num">1,168,376</td>
+          </tr>
+          
+          <tr>
+            <td>宁波美弘进出口有限公司</td><td>北仑支行</td><td>战略客户</td>
+            <td class="num">2,560.0</td>
+            <td class="num">463,671</td>
+          </tr>
+          
+          <tr>
+            <td>宁波德储国际贸易有限公司</td><td>总行营业部</td><td>战略客户</td>
+            <td class="num">3,317.6</td>
+            <td class="num">328,320</td>
+          </tr>
+          
+          <tr>
+            <td>宁波赛特威尔进出口有限公司</td><td>江北支行</td><td>战略客户</td>
+            <td class="num">2,156.8</td>
+            <td class="num">288,324</td>
+          </tr>
+          
+          <tr>
+            <td>宁波侣依进出口有限公司</td><td>明州支行</td><td>大众客户</td>
+            <td class="num">402.1</td>
+            <td class="num">230,619</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #3b82f615; color: #3b82f6;">即汇通线上化</span>
+      
+      <span class="product-tag" style="background: #3b82f615; color: #3b82f6;">远期锁汇升级</span>
+      
+      <span class="product-tag" style="background: #3b82f615; color: #3b82f6;">驾驶舱自助</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>批发业3210户是最大客群，但92%仅用即汇通，产品单一——重点推线上化和远期锁汇升级</li>
+        
+        <li>TOP客户多为战略客户，应配专属客户经理做周期管理方案</li>
+        
+        <li>零售业户均收益4005元，是隐藏的高价值细分，可复制批发业打法</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">3430</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">3377</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">1445</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">1054</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G2-装备制造类" style="border-top-color: #10b981;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G2 装备制造类</h3>
+        <div class="positioning">制造业标杆：进出口结构均衡，衍生基础好，可做产品组合升级</div>
+      </div>
+      <div class="badge" style="background: #10b98122; color: #10b981;">900 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">900</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">4.159</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">148.4</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">1649.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">10</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">83</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G2-装备制造类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.3333333333333335%; background: #10b981;"></div></div>
+          <span class="pct">21户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G2-装备制造类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 5.0%; background: #f59e0b;"></div></div>
+          <span class="pct">45户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G2-装备制造类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.1111111111111112%; background: #8b5cf6;"></div></div>
+          <span class="pct">10户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G2-装备制造类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.4444444444444444%; background: #ec4899;"></div></div>
+          <span class="pct">4户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 85.2%; background: #3b82f6;"></div></div>
+          <span class="pct">85.2%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.7%; background: #ef4444;"></div></div>
+          <span class="pct">0.7%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 10.8%; background: #10b981;"></div></div>
+          <span class="pct">10.8%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 3.3%; background: #9ca3af;"></div></div>
+          <span class="pct">3.3%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>906.1</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>余姚市中宁电器有限公司</td><td>余姚支行</td><td>重点客户</td>
+            <td class="num">900.0</td>
+            <td class="num">132,250</td>
+          </tr>
+          
+          <tr>
+            <td>安徽德姆勒科技股份有限公司</td><td>慈溪支行</td><td>战略客户</td>
+            <td class="num">772.0</td>
+            <td class="num">124,243</td>
+          </tr>
+          
+          <tr>
+            <td>宁波博菱电器集团股份有限公司</td><td>北仑支行</td><td>战略客户</td>
+            <td class="num">1,000.0</td>
+            <td class="num">118,600</td>
+          </tr>
+          
+          <tr>
+            <td>宁波良业电器有限公司</td><td>国家高新区支行</td><td>战略客户</td>
+            <td class="num">650.0</td>
+            <td class="num">81,853</td>
+          </tr>
+          
+          <tr>
+            <td>宁波东旭太阳能电力有限公司</td><td>四明支行</td><td>重点客户</td>
+            <td class="num">107.2</td>
+            <td class="num">69,068</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #10b98115; color: #10b981;">远期结售汇</span>
+      
+      <span class="product-tag" style="background: #10b98115; color: #10b981;">人民币掉期</span>
+      
+      <span class="product-tag" style="background: #10b98115; color: #10b981;">周期管理</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>装备制造是制造业中衍生渗透较好的群组（8-12%），可作为衍生品升级的样板</li>
+        
+        <li>汽车制造业平均海关量1700万美元最高，是远期锁汇的核心目标</li>
+        
+        <li>金属制品业197户但0战略客户、衍生渗透仅7%——存在升级空间</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">898</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">883</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">447</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">318</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G3-消费品制造类" style="border-top-color: #f59e0b;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G3 消费品制造类</h3>
+        <div class="positioning">出口敏感型：汇率波动直接影响利润，远期锁汇是刚需</div>
+      </div>
+      <div class="badge" style="background: #f59e0b22; color: #f59e0b;">317 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">317</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">1.059</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">32.0</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">1010.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">3</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">30</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G3-消费品制造类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.8391167192429023%; background: #10b981;"></div></div>
+          <span class="pct">9户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G3-消费品制造类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.73186119873817%; background: #f59e0b;"></div></div>
+          <span class="pct">15户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G3-消费品制造类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.2618296529968454%; background: #8b5cf6;"></div></div>
+          <span class="pct">4户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G3-消费品制造类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.6309148264984227%; background: #ec4899;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 80.8%; background: #3b82f6;"></div></div>
+          <span class="pct">80.8%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0%; background: #ef4444;"></div></div>
+          <span class="pct">0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 14.5%; background: #10b981;"></div></div>
+          <span class="pct">14.5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.7%; background: #9ca3af;"></div></div>
+          <span class="pct">4.7%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>780.4</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波凯信服饰股份有限公司</td><td>科技支行</td><td>战略客户</td>
+            <td class="num">300.0</td>
+            <td class="num">55,800</td>
+          </tr>
+          
+          <tr>
+            <td>宁波市千虹服饰有限公司</td><td>奉化支行</td><td>重点客户</td>
+            <td class="num">800.0</td>
+            <td class="num">36,750</td>
+          </tr>
+          
+          <tr>
+            <td>宁波协同文创有限公司</td><td>明州支行</td><td>重点客户</td>
+            <td class="num">282.0</td>
+            <td class="num">25,632</td>
+          </tr>
+          
+          <tr>
+            <td>宁波兄弟服饰有限公司</td><td>象山支行</td><td>战略客户</td>
+            <td class="num">300.0</td>
+            <td class="num">23,400</td>
+          </tr>
+          
+          <tr>
+            <td>宁波日达服装有限公司</td><td>象山支行</td><td>大众客户</td>
+            <td class="num">44.0</td>
+            <td class="num">21,781</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #f59e0b15; color: #f59e0b;">远期结售汇（出口锁汇）</span>
+      
+      <span class="product-tag" style="background: #f59e0b15; color: #f59e0b;">加强型远期</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>纺织服装业衍生渗透18.4%最高，证明客户已认知汇率风险——可向其他消费品行业复制经验</li>
+        
+        <li>出口型客户是远期锁汇的天然客群，用'汇率波动案例'切入最有效</li>
+        
+        <li>家具制造业衍生渗透14.3%，可继续提升至20%+</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">315</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">312</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">127</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">107</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G4-高端制造电子类" style="border-top-color: #8b5cf6;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G4 高端制造电子类</h3>
+        <div class="positioning">高价值客群：户均收益高、衍生基础好，适合复杂衍生品</div>
+      </div>
+      <div class="badge" style="background: #8b5cf622; color: #8b5cf6;">102 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">102</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">0.919</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">32.3</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">3170.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">2</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">12</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G4-高端制造电子类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.9803921568627451%; background: #10b981;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G4-高端制造电子类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 7.8431372549019605%; background: #f59e0b;"></div></div>
+          <span class="pct">8户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G4-高端制造电子类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.9803921568627451%; background: #8b5cf6;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G4-高端制造电子类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.941176470588235%; background: #ec4899;"></div></div>
+          <span class="pct">3户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 74.5%; background: #3b82f6;"></div></div>
+          <span class="pct">74.5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0%; background: #ef4444;"></div></div>
+          <span class="pct">0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 20.6%; background: #10b981;"></div></div>
+          <span class="pct">20.6%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.9%; background: #9ca3af;"></div></div>
+          <span class="pct">4.9%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>1164.8</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波欧达光电有限公司</td><td>鄞州支行</td><td>战略客户</td>
+            <td class="num">4,532.1</td>
+            <td class="num">196,500</td>
+          </tr>
+          
+          <tr>
+            <td>宁波埃斯科光电有限公司</td><td>北仑支行</td><td>大众客户</td>
+            <td class="num">145.0</td>
+            <td class="num">35,350</td>
+          </tr>
+          
+          <tr>
+            <td>浙江人和光伏科技有限公司</td><td>慈溪支行</td><td>大众客户</td>
+            <td class="num">500.0</td>
+            <td class="num">26,300</td>
+          </tr>
+          
+          <tr>
+            <td>慈溪市寅升电器有限公司</td><td>慈溪支行</td><td>大众客户</td>
+            <td class="num">173.1</td>
+            <td class="num">15,906</td>
+          </tr>
+          
+          <tr>
+            <td>宁波麦度智联科技股份有限公司</td><td>奉化支行</td><td>重点客户</td>
+            <td class="num">300.0</td>
+            <td class="num">15,450</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #8b5cf615; color: #8b5cf6;">期权组合</span>
+      
+      <span class="product-tag" style="background: #8b5cf615; color: #8b5cf6;">掉期</span>
+      
+      <span class="product-tag" style="background: #8b5cf615; color: #8b5cf6;">结构性产品</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>计算机电子户均收益5111元，是高端衍生品的核心客群</li>
+        
+        <li>已有13%衍生渗透基础，可主推期权+掉期组合等复杂产品</li>
+        
+        <li>铁路船舶航空航天客户数少但单价高，做1对1方案式营销</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">101</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">101</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">55</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">41</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G5-化工医药类" style="border-top-color: #ef4444;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G5 化工医药类</h3>
+        <div class="positioning">进口大额型：海关量大、汇率敞口大，需要主动对冲</div>
+      </div>
+      <div class="badge" style="background: #ef444422; color: #ef4444;">203 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">203</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">1.024</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">25.5</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">1258.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">1</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">26</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G5-化工医药类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.926108374384237%; background: #10b981;"></div></div>
+          <span class="pct">10户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G5-化工医药类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 5.911330049261084%; background: #f59e0b;"></div></div>
+          <span class="pct">12户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G5-化工医药类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.9852216748768473%; background: #8b5cf6;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G5-化工医药类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.49261083743842365%; background: #ec4899;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 79.3%; background: #3b82f6;"></div></div>
+          <span class="pct">79.3%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.5%; background: #ef4444;"></div></div>
+          <span class="pct">1.5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 15.8%; background: #10b981;"></div></div>
+          <span class="pct">15.8%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 3.4%; background: #9ca3af;"></div></div>
+          <span class="pct">3.4%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>950.5</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波圣宇瑞医疗器械有限公司</td><td>总行营业部</td><td>重点客户</td>
+            <td class="num">2,400.0</td>
+            <td class="num">53,200</td>
+          </tr>
+          
+          <tr>
+            <td>宁波益达铸业有限公司</td><td>鄞州支行</td><td>大众客户</td>
+            <td class="num">380.0</td>
+            <td class="num">49,445</td>
+          </tr>
+          
+          <tr>
+            <td>浙江美源新材料股份有限公司</td><td>慈溪支行</td><td>重点客户</td>
+            <td class="num">200.0</td>
+            <td class="num">21,300</td>
+          </tr>
+          
+          <tr>
+            <td>宁波绿之健药业有限公司</td><td>奉化支行</td><td>重点客户</td>
+            <td class="num">150.0</td>
+            <td class="num">19,565</td>
+          </tr>
+          
+          <tr>
+            <td>宁波市镇海海德生化科技有限公司</td><td>江北支行</td><td>大众客户</td>
+            <td class="num">130.0</td>
+            <td class="num">15,870</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #ef444415; color: #ef4444;">掉期</span>
+      
+      <span class="product-tag" style="background: #ef444415; color: #ef4444;">期权对冲</span>
+      
+      <span class="product-tag" style="background: #ef444415; color: #ef4444;">远期</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>化学原料制造业平均海关量5924万美元最高，是进口对冲的核心目标</li>
+        
+        <li>医药制造业户均收益14275元全场最高，5户小而精，应配专属服务</li>
+        
+        <li>橡胶塑料178户、衍生渗透10%，可批量推掉期产品</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">203</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">197</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">90</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">63</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G6-物流代理类" style="border-top-color: #06b6d4;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G6 物流代理类</h3>
+        <div class="positioning">服务型：自身进出口量小，但服务大量进出口商——是渠道客户</div>
+      </div>
+      <div class="badge" style="background: #06b6d422; color: #06b6d4;">199 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">199</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">0.608</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">29.0</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">1458.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">0</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">13</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G6-物流代理类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.5025125628140703%; background: #10b981;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G6-物流代理类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.0100502512562812%; background: #f59e0b;"></div></div>
+          <span class="pct">4户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G6-物流代理类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.0050251256281406%; background: #8b5cf6;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G6-物流代理类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.0050251256281406%; background: #ec4899;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.5%; background: #3b82f6;"></div></div>
+          <span class="pct">2.5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.0%; background: #ef4444;"></div></div>
+          <span class="pct">1.0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.0%; background: #10b981;"></div></div>
+          <span class="pct">2.0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 94.5%; background: #9ca3af;"></div></div>
+          <span class="pct">94.5%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>84.8</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波市仁丰国际货运代理有限公司</td><td>明州支行</td><td>大众客户</td>
+            <td class="num">1,156.8</td>
+            <td class="num">141,380</td>
+          </tr>
+          
+          <tr>
+            <td>宁波天盛海运有限公司</td><td>镇海支行</td><td>大众客户</td>
+            <td class="num">600.0</td>
+            <td class="num">47,097</td>
+          </tr>
+          
+          <tr>
+            <td>宁波建航国际货运代理有限公司</td><td>国家高新区支行</td><td>大众客户</td>
+            <td class="num">233.1</td>
+            <td class="num">36,389</td>
+          </tr>
+          
+          <tr>
+            <td>宁波美航物流有限公司</td><td>国家高新区支行</td><td>大众客户</td>
+            <td class="num">81.0</td>
+            <td class="num">26,669</td>
+          </tr>
+          
+          <tr>
+            <td>宁波中威国际物流有限公司</td><td>国家高新区支行</td><td>大众客户</td>
+            <td class="num">70.0</td>
+            <td class="num">15,097</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #06b6d415; color: #06b6d4;">跨境结算</span>
+      
+      <span class="product-tag" style="background: #06b6d415; color: #06b6d4;">代客汇兑</span>
+      
+      <span class="product-tag" style="background: #06b6d415; color: #06b6d4;">即汇通</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>多式联运代理159户但平均海关量仅46万美元——这些是代理公司，自己不进出口，应做跨境结算和代客汇兑</li>
+        
+        <li>物流代理客户是渠道型，通过他们可触达其背后的进出口客户</li>
+        
+        <li>水上运输业户均收益5140元，有衍生基础，可重点培育</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">199</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">198</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">3</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">4</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G7-服务业类" style="border-top-color: #ec4899;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G7 服务业类</h3>
+        <div class="positioning">培育期：业务量小、产品单一，是长期培育客群</div>
+      </div>
+      <div class="badge" style="background: #ec489922; color: #ec4899;">128 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">128</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">0.429</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">15.4</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">1202.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">2</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">6</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G7-服务业类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.5625%; background: #10b981;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G7-服务业类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.5625%; background: #f59e0b;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G7-服务业类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.78125%; background: #8b5cf6;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G7-服务业类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.78125%; background: #ec4899;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 68.8%; background: #3b82f6;"></div></div>
+          <span class="pct">68.8%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 0.8%; background: #ef4444;"></div></div>
+          <span class="pct">0.8%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 4.7%; background: #10b981;"></div></div>
+          <span class="pct">4.7%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 25.8%; background: #9ca3af;"></div></div>
+          <span class="pct">25.8%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>348.1</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>浙江自贸区美格供应链管理有限公司</td><td>四明支行</td><td>战略客户</td>
+            <td class="num">1,240.0</td>
+            <td class="num">125,510</td>
+          </tr>
+          
+          <tr>
+            <td>浙江中乐进出口有限公司</td><td>鄞州支行</td><td>战略客户</td>
+            <td class="num">158.4</td>
+            <td class="num">18,059</td>
+          </tr>
+          
+          <tr>
+            <td>宁波璟亚供应链管理有限公司</td><td>海曙支行</td><td>大众客户</td>
+            <td class="num">41.0</td>
+            <td class="num">6,957</td>
+          </tr>
+          
+          <tr>
+            <td>浙江盛迈电气技术有限公司</td><td>北仑支行</td><td>大众客户</td>
+            <td class="num">14.0</td>
+            <td class="num">2,086</td>
+          </tr>
+          
+          <tr>
+            <td>宁波依斐逊进出口有限公司</td><td>江北支行</td><td>大众客户</td>
+            <td class="num">10.0</td>
+            <td class="num">880</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #ec489915; color: #ec4899;">即汇通</span>
+      
+      <span class="product-tag" style="background: #ec489915; color: #ec4899;">基础外汇产品</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>科技推广和应用服务47户衍生渗透0%，是培育期客群，先做即汇通激活</li>
+        
+        <li>商务服务业户均收益5892元，是服务业里相对高价值的细分</li>
+        
+        <li>整体以低频维护为主，等业务量起来再推衍生品</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">128</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">127</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">30</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">12</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+  <div class="group-card" id="G8-长尾其他类" style="border-top-color: #6b7280;">
+    <div class="group-header">
+      <div class="title-wrap">
+        <h3>G8 长尾其他类</h3>
+        <div class="positioning">低优先级维护：行业分散、客户数少，批量维护即可</div>
+      </div>
+      <div class="badge" style="background: #6b728022; color: #6b7280;">73 户</div>
+    </div>
+
+    <!-- 6项核心指标 -->
+    <div class="group-stats">
+      <div class="stat-item"><div class="v">73</div><div class="l">客户数</div></div>
+      <div class="stat-item"><div class="v">0.326</div><div class="l">交易量(亿美元)</div></div>
+      <div class="stat-item"><div class="v">4.2</div><div class="l">衍生收益(万元)</div></div>
+      <div class="stat-item"><div class="v">577.0</div><div class="l">户均衍生收益(元)</div></div>
+      <div class="stat-item"><div class="v">0</div><div class="l">战略客户</div></div>
+      <div class="stat-item"><div class="v">7</div><div class="l">衍生客户</div></div>
+    </div>
+
+    <!-- 产品渗透 + 进出口结构 -->
+    <div class="group-detail">
+      <div class="detail-block">
+        <h5>产品渗透情况</h5>
+        <button type="button" class="progress-row product-row" data-group="G8-长尾其他类" data-product="forward">
+          <span class="name">有远期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.36986301369863%; background: #10b981;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G8-长尾其他类" data-product="swap">
+          <span class="name">有掉期</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.73972602739726%; background: #f59e0b;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G8-长尾其他类" data-product="option">
+          <span class="name">有期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 2.73972602739726%; background: #8b5cf6;"></div></div>
+          <span class="pct">2户</span>
+        </button>
+        <button type="button" class="progress-row product-row" data-group="G8-长尾其他类" data-product="combo_option">
+          <span class="name">组合期权</span>
+          <div class="bar-wrap"><div class="bar" style="width: 1.36986301369863%; background: #ec4899;"></div></div>
+          <span class="pct">1户</span>
+        </button>
+      </div>
+      <div class="detail-block">
+        <h5>进出口结构</h5>
+        <div class="progress-row">
+          <span class="name">出口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 60.3%; background: #3b82f6;"></div></div>
+          <span class="pct">60.3%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进口型</span>
+          <div class="bar-wrap"><div class="bar" style="width: 11.0%; background: #ef4444;"></div></div>
+          <span class="pct">11.0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">进出口</span>
+          <div class="bar-wrap"><div class="bar" style="width: 19.2%; background: #10b981;"></div></div>
+          <span class="pct">19.2%</span>
+        </div>
+        <div class="progress-row">
+          <span class="name">其它</span>
+          <div class="bar-wrap"><div class="bar" style="width: 9.6%; background: #9ca3af;"></div></div>
+          <span class="pct">9.6%</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">平均海关量：<b>1081.6</b> 万美元</div>
+      </div>
+    </div>
+
+    <!-- TOP5 客户 -->
+    <div class="detail-block" style="margin-bottom: 12px;">
+      <h5>TOP 5 客户（按衍生业务收益）</h5>
+      <table class="top5-table">
+        <thead>
+          <tr><th>客户名称</th><th>一级机构</th><th>分层</th><th class="num">衍生交易量(万美元)</th><th class="num">衍生收益(元)</th></tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td>宁波市青绿包装制品有限公司</td><td>国家高新区支行</td><td>大众客户</td>
+            <td class="num">43.1</td>
+            <td class="num">19,952</td>
+          </tr>
+          
+          <tr>
+            <td>慈溪市金威铜业有限公司</td><td>慈溪支行</td><td>战略客户</td>
+            <td class="num">106.1</td>
+            <td class="num">10,604</td>
+          </tr>
+          
+          <tr>
+            <td>宁波玉健健康科技股份有限公司</td><td>北仑支行</td><td>战略客户</td>
+            <td class="num">400.0</td>
+            <td class="num">6,800</td>
+          </tr>
+          
+          <tr>
+            <td>宁波天韵食品有限公司</td><td>象山支行</td><td>重点客户</td>
+            <td class="num">200.0</td>
+            <td class="num">3,400</td>
+          </tr>
+          
+          <tr>
+            <td>宁波杰顺生物科技有限公司</td><td>北仑支行</td><td>大众客户</td>
+            <td class="num">45.2</td>
+            <td class="num">633</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 推荐产品 -->
+    <div style="margin-bottom: 12px;">
+      <h5 style="font-size:13px; color:#374151; font-weight:600; margin-bottom:8px;">推荐产品组合</h5>
+      
+      <span class="product-tag" style="background: #6b728015; color: #6b7280;">即汇通（基础产品）</span>
+      
+    </div>
+
+    <!-- 营销建议 -->
+    <div class="advice-box">
+      <h5>💡 营销建议</h5>
+      <ul>
+        
+        <li>长尾行业客户数少且分散，建议批量维护不单独投入资源</li>
+        
+        <li>其中电力燃气、造纸、印刷等如有大客户可单独关注</li>
+        
+        <li>重点关注是否有'隐藏的大客户'被埋没在长尾里</li>
+        
+      </ul>
+    </div>
+
+    <!-- 商机统计 -->
+    <div class="opp-stats">
+      <div class="opp-stat"><div class="v">72</div><div class="l">商机客户总数</div></div>
+      <div class="opp-stat"><div class="v">70</div><div class="l">金管家空户</div></div>
+      <div class="opp-stat"><div class="v">27</div><div class="l">衍生升级候选</div></div>
+      <div class="opp-stat"><div class="v">30</div><div class="l">海关大户回流</div></div>
+    </div>
+  </div>
+  
+
+  <!-- 商机热力图 -->
+  <div class="section" id="heatmap">
+    <div class="section-title"><span class="bar"></span>行业群组 × 商机类型 热力图</div>
+    <p style="font-size:13px; color:#6b7280; margin-bottom:16px;">颜色越深表示该群组在该商机类型上的客户数越多，是营销重点方向。</p>
+    <table class="heatmap-table">
+      <thead>
+        <tr>
+          <th>行业群组</th>
+          
+          <th>金管家空户</th>
+          
+          <th>海关大户回流</th>
+          
+          <th>衍生升级</th>
+          
+          <th>额度闲置</th>
+          
+          <th>新客培育</th>
+          
+          <th>忠诚度转化</th>
+          
+          <th>衍生首办种子</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td class="group-name">G1 贸易批发类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 1.00); color: white;">
+            3377
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.31); color: #1f2937;">
+            1054
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.43); color: #1f2937;">
+            1445
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.02); color: #1f2937;">
+            66
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.07); color: #1f2937;">
+            234
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.03); color: #1f2937;">
+            85
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.03); color: #1f2937;">
+            93
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G2 装备制造类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.26); color: #1f2937;">
+            883
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.09); color: #1f2937;">
+            318
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.13); color: #1f2937;">
+            447
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            37
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.02); color: #1f2937;">
+            59
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            26
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            32
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G3 消费品制造类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.09); color: #1f2937;">
+            312
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.03); color: #1f2937;">
+            107
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.04); color: #1f2937;">
+            127
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            12
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            26
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            8
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            10
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G4 高端制造电子类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.03); color: #1f2937;">
+            101
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            41
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.02); color: #1f2937;">
+            55
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            7
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            2
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            5
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G5 化工医药类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.06); color: #1f2937;">
+            197
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.02); color: #1f2937;">
+            63
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.03); color: #1f2937;">
+            90
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            4
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            16
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            5
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            12
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G6 物流代理类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.06); color: #1f2937;">
+            198
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            4
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            5
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            28
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            1
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G7 服务业类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.04); color: #1f2937;">
+            127
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            12
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            30
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            13
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            1
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+        </tr>
+        
+        <tr>
+          <td class="group-name">G8 长尾其他类</td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.02); color: #1f2937;">
+            70
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            30
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.01); color: #1f2937;">
+            27
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            4
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            9
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            4
+          </td>
+          
+          <td class="heatmap-cell" style="background: rgba(59, 130, 246, 0.00); color: #1f2937;">
+            3
+          </td>
+          
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    生成时间：2026-06-24 · 数据源：6月crm测试.xlsx · 本看板供内部营销决策参考
+  </div>
+</div>
+
+<div class="modal-overlay" id="product-modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
+    <div class="modal-header">
+      <div class="modal-title" id="product-modal-title">产品客户名单</div>
+      <button type="button" class="modal-close" id="product-modal-close" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body" id="product-modal-body"></div>
+  </div>
+</div>
+
+<script>
+// Chart.js 全局配置
+Chart.defaults.font.family = "'-apple-system', 'PingFang SC', 'Microsoft YaHei', sans-serif";
+Chart.defaults.color = '#4b5563';
+
+const groupNames = ["G1 贸易批发类", "G2 装备制造类", "G3 消费品制造类", "G4 高端制造电子类", "G5 化工医药类", "G6 物流代理类", "G7 服务业类", "G8 长尾其他类"];
+const groupColors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#ec4899", "#6b7280"];
+
+// 通用bar配置
+function barConfig(labels, data, colors, title) {
+  return {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: title, data: data, backgroundColor: colors, borderRadius: 4, maxBarThickness: 50 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y + ' ' + (title.includes('率')?'%':'') } } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+    }
+  };
+}
+
+const custData = [3431, 900, 317, 102, 203, 199, 128, 73];
+const volData = [17.586, 4.159, 1.059, 0.919, 1.024, 0.608, 0.429, 0.326];
+const revData = [744.8, 148.4, 32.0, 32.3, 25.5, 29.0, 15.4, 4.2];
+const derivData = [8.0, 9.2, 9.5, 11.8, 12.8, 6.5, 4.7, 9.6];
+const productCustomerLists = {"G1-贸易批发类": {"name": "G1 贸易批发类", "lists": {"forward": [{"customer_name": "宁波美弘进出口有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 31430000.0, "deriv_revenue_yuan": 463671.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波赛特威尔进出口有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 21568050.0, "deriv_revenue_yuan": 288324.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波翔欣家居用品进出口有限责任公司", "branch": "江北支行", "manager": "王令", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 10633519.0, "deriv_revenue_yuan": 218036.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江中大元通国际贸易有限公司", "branch": "科技支行", "manager": "解迪", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 22857759.0, "deriv_revenue_yuan": 144439.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市镇海美联国际贸易服务有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 14409543.0, "deriv_revenue_yuan": 89700.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波沂辉化工有限公司", "branch": "北仑支行", "manager": "戴绅", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 6730000.0, "deriv_revenue_yuan": 82900.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波联合燕华化工股份有限公司", "branch": "海曙支行", "manager": "", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 10500000.0, "deriv_revenue_yuan": 78260.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波创酷国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "缪鸣夷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3842013.0, "deriv_revenue_yuan": 71865.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波通途国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "缪鸣夷", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 3222389.0, "deriv_revenue_yuan": 61245.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "东方锦维（宁波）国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 5506779.0, "deriv_revenue_yuan": 52995.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波晨新电子科技有限公司", "branch": "明州支行", "manager": "韩峰", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 8453940.0, "deriv_revenue_yuan": 52894.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波华茂国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 36704916.0, "deriv_revenue_yuan": 51400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波布利杰进出口有限公司", "branch": "鄞州支行", "manager": "傅雨", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4122000.0, "deriv_revenue_yuan": 46640.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市海曙积家进出口有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2200000.0, "deriv_revenue_yuan": 44000.0, "opportunity_tags": "海关大户回流、忠诚度转化", "suggested_action": "支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波恒越进出口有限公司", "branch": "明州支行", "manager": "沈琦", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3740000.0, "deriv_revenue_yuan": 43176.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市环宇品尚进出口有限公司", "branch": "明州支行", "manager": "陈斌", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2206968.0, "deriv_revenue_yuan": 36000.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波一舟进出口有限公司", "branch": "鄞州支行", "manager": "陈锡君", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 33600.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江天齐国际贸易集团有限公司", "branch": "国家高新区支行", "manager": "徐雍涛", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3754345.0, "deriv_revenue_yuan": 33042.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市新琪阳服饰有限公司", "branch": "鄞州支行", "manager": "汪磊", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3710000.0, "deriv_revenue_yuan": 30319.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江五合进出口有限公司", "branch": "鄞州支行", "manager": "周哲皓", "segment": "战略客户", "industry": "零售业", "trade_volume_usd": 2418412.0, "deriv_revenue_yuan": 25490.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波元呈国际贸易有限公司", "branch": "明州支行", "manager": "陈怡丹", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 25400.0, "opportunity_tags": "衍生首办种子", "suggested_action": "重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波洋卡进出口有限公司", "branch": "镇海支行", "manager": "张玲", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1935352.0, "deriv_revenue_yuan": 23968.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波禧玛诺服装有限公司", "branch": "北仑支行", "manager": "盛巧璐", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 23600.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波星登进出口有限公司", "branch": "鄞州支行", "manager": "金宇涵", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2516800.0, "deriv_revenue_yuan": 22119.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波盘领实业有限公司", "branch": "科技支行", "manager": "潘城", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2686038.0, "deriv_revenue_yuan": 22060.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波达美世欣进出口有限公司", "branch": "海曙支行", "manager": "林龙", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2210000.0, "deriv_revenue_yuan": 21930.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波易昌工业科技有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1897990.0, "deriv_revenue_yuan": 20644.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市甬江新区贝森贸易有限公司", "branch": "明州支行", "manager": "明州支行", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 19650.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市祥弘汽车销售服务有限公司", "branch": "湖东支行", "manager": "肖开凤", "segment": "战略客户", "industry": "零售业", "trade_volume_usd": 4788828.0, "deriv_revenue_yuan": 19400.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中哲国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "张真", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 18100.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波诚士通国际贸易有限公司", "branch": "明州支行", "manager": "戴晔", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2255430.0, "deriv_revenue_yuan": 16220.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市联凯化学有限公司", "branch": "鄞州支行", "manager": "陈薇", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 2436355.0, "deriv_revenue_yuan": 16200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "上海柯颖进出口有限公司", "branch": "象山支行", "manager": "蔡志航", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 630000.0, "deriv_revenue_yuan": 16113.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波金丁工贸有限公司", "branch": "海曙支行", "manager": "王峰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2811234.0, "deriv_revenue_yuan": 15565.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波飞铂通信技术有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1620000.0, "deriv_revenue_yuan": 15000.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "滚动狗（宁波）进出口有限公司", "branch": "明州支行", "manager": "殷颖", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1780000.0, "deriv_revenue_yuan": 14283.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波悦纳进出口有限公司", "branch": "国家高新区支行", "manager": "励颖", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1020000.0, "deriv_revenue_yuan": 13570.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波康大进出口有限公司", "branch": "四明支行", "manager": "顾亦琦", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2350000.0, "deriv_revenue_yuan": 13200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波艾迪西国际贸易有限公司", "branch": "科技支行", "manager": "李捷", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 12500.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波新海威进出口有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1260000.0, "deriv_revenue_yuan": 12272.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波群辉进出口有限公司", "branch": "鄞州支行", "manager": "", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1817331.0, "deriv_revenue_yuan": 11591.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波雷立国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 970000.0, "deriv_revenue_yuan": 10540.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "慈溪市优创电器有限公司", "branch": "慈溪支行", "manager": "龚晔昀", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1300000.0, "deriv_revenue_yuan": 10300.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波金盈通国际贸易有限公司", "branch": "海曙支行", "manager": "谢继华", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 404460.0, "deriv_revenue_yuan": 10220.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波新皕家居有限公司", "branch": "湖东支行", "manager": "郝星灿", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2160000.0, "deriv_revenue_yuan": 9835.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市海天斯进出口有限公司", "branch": "鄞州中心区支行", "manager": "李苏诺", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1120724.0, "deriv_revenue_yuan": 9817.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波亿盛达进出口有限公司", "branch": "江北支行", "manager": "毛宇磊", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 947712.0, "deriv_revenue_yuan": 9670.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波爱孚德农产品有限公司", "branch": "北仑支行", "manager": "李雨婷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 880000.0, "deriv_revenue_yuan": 9634.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波美爵进出口有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 500000.0, "deriv_revenue_yuan": 9000.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波柯泰医疗器械有限公司", "branch": "国家高新区支行", "manager": "陈潇楠", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 700000.0, "deriv_revenue_yuan": 9000.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市翔皇进出口有限公司", "branch": "宁海支行", "manager": "范逍峰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2274306.0, "deriv_revenue_yuan": 8850.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "恩凯控股有限公司", "branch": "科技支行", "manager": "戴嘉程", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2381547.0, "deriv_revenue_yuan": 8820.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市振原进出口有限公司", "branch": "余姚中心区支行", "manager": "胡丹丹", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1681987.0, "deriv_revenue_yuan": 8633.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波和煦进出口有限公司", "branch": "国家高新区支行", "manager": "朱寅栋", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1112187.0, "deriv_revenue_yuan": 7922.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波倍迅进出口有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 690000.0, "deriv_revenue_yuan": 7590.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波嘉联进出口有限公司", "branch": "鄞州支行", "manager": "柴金益", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1543138.0, "deriv_revenue_yuan": 7529.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波维科工贸有限公司", "branch": "总行营业部", "manager": "陆耀生", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 1200000.0, "deriv_revenue_yuan": 7500.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "杭州寰球互动电子商务有限责任公司", "branch": "湖东支行", "manager": "", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 7400.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波锐灏进出口有限公司", "branch": "江北支行", "manager": "张经天", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1450605.0, "deriv_revenue_yuan": 7372.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波简妮进出口有限公司", "branch": "科技支行", "manager": "解迪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 914558.0, "deriv_revenue_yuan": 7270.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波爱孚迪国际贸易有限公司", "branch": "北仑支行", "manager": "史佳瑜", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 350000.0, "deriv_revenue_yuan": 7020.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波世嘉嘉辰国际贸易有限公司", "branch": "宁海支行", "manager": "庞立纲", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1422551.0, "deriv_revenue_yuan": 6900.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波优翔国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "郑未", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 6870.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波普太进出口有限公司", "branch": "鄞州支行", "manager": "忻丁力", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 783088.0, "deriv_revenue_yuan": 6485.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波意麟进出口有限公司", "branch": "明州支行", "manager": "戴晔", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 5790.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波亿迅进出口有限公司", "branch": "鄞州中心区支行", "manager": "林捷", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 1150000.0, "deriv_revenue_yuan": 5497.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波绿谷进出口有限公司", "branch": "四明支行", "manager": "邢家宝", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 300000.0, "deriv_revenue_yuan": 5400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波凯源国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 510730.0, "deriv_revenue_yuan": 5400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波雷克对外贸易有限公司", "branch": "科技支行", "manager": "桂璐", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1110000.0, "deriv_revenue_yuan": 5237.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市鄞州乐水贸易有限公司", "branch": "鄞州支行", "manager": "蔡勇", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 879245.0, "deriv_revenue_yuan": 5180.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市众界无时电子商务有限公司", "branch": "明州支行", "manager": "邓娇瑜", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 890000.0, "deriv_revenue_yuan": 5096.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波伊孚丽雅儿童用品有限公司", "branch": "奉化支行", "manager": "胡琼", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 682571.0, "deriv_revenue_yuan": 5010.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市鄞州和创进出口有限公司", "branch": "明州支行", "manager": "薛宇智", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1230490.0, "deriv_revenue_yuan": 4890.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市珈晟进出口有限公司", "branch": "镇海支行", "manager": "赵哲生", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 543866.0, "deriv_revenue_yuan": 4820.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波中孚国际贸易有限公司", "branch": "明州支行", "manager": "姜晓杰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 933000.0, "deriv_revenue_yuan": 4587.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波奥菲斯莱恩国际贸易有限公司", "branch": "国家高新区支行", "manager": "宓晨旭", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 526000.0, "deriv_revenue_yuan": 4096.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波经济技术开发区全顺机电进出口有限公司", "branch": "鄞州支行", "manager": "柴金益", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 619357.0, "deriv_revenue_yuan": 3975.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波于归电子商务有限公司", "branch": "明州支行", "manager": "邓娇瑜", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 3730.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中厨日用品有限公司", "branch": "明州支行", "manager": "姜晓杰", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 661000.0, "deriv_revenue_yuan": 3721.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波大欣化纤有限公司", "branch": "慈溪支行", "manager": "俞淑文", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 981000.0, "deriv_revenue_yuan": 3565.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波摩嘉机械进出口有限公司", "branch": "余姚中心区支行", "manager": "余琰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 930144.0, "deriv_revenue_yuan": 3116.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波海曙金普进出口有限公司", "branch": "湖东支行", "manager": "庄仕刚", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1180000.0, "deriv_revenue_yuan": 3000.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波风华国际贸易有限公司", "branch": "象山支行", "manager": "郑蓉", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 249086.0, "deriv_revenue_yuan": 2866.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波海曙亿丰通信设备有限公司", "branch": "明州支行", "manager": "张鲁彦", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 950000.0, "deriv_revenue_yuan": 2640.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波乾唐化工有限公司", "branch": "海曙支行", "manager": "谢继华", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 320000.0, "deriv_revenue_yuan": 2400.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波科米化工有限公司", "branch": "海曙支行", "manager": "谢继华", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 346428.0, "deriv_revenue_yuan": 2395.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波赛艾科化工有限公司", "branch": "湖东支行", "manager": "肖开凤", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 650000.0, "deriv_revenue_yuan": 1920.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "慈溪市飞龙国际贸易有限公司", "branch": "慈溪中心区支行", "manager": "慈溪中心区支行", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 1540000.0, "deriv_revenue_yuan": 1860.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波森垚进出口有限公司", "branch": "江北支行", "manager": "胡哲", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1038000.0, "deriv_revenue_yuan": 1692.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波星洋进出口有限公司", "branch": "湖东支行", "manager": "周晓勤", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 976191.0, "deriv_revenue_yuan": 1595.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波奕之泰进出口有限公司", "branch": "四明支行", "manager": "方宁生", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 893223.0, "deriv_revenue_yuan": 1510.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波银帆国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "平新颖", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 227700.0, "deriv_revenue_yuan": 1410.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波脱凡体育科技有限公司", "branch": "明州支行", "manager": "叶倩男", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 1380.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波文迅进出口有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 353193.0, "deriv_revenue_yuan": 1300.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波贝希进出口有限公司", "branch": "宁海支行", "manager": "应玖蓉", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 605900.0, "deriv_revenue_yuan": 1173.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波公牛国际贸易有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 620000.0, "deriv_revenue_yuan": 1001.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波酷尔威进出口有限公司", "branch": "国家高新区支行", "manager": "俞超群", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 50000.0, "deriv_revenue_yuan": 900.0, "opportunity_tags": "海关大户回流、额度闲置、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；带额度使用方案主动上门；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市浩瑞成进出口有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1107961.0, "deriv_revenue_yuan": 580.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波宜思科技有限公司", "branch": "鄞州中心区支行", "manager": "", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 163590.0, "deriv_revenue_yuan": 384.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚润叶工具有限公司", "branch": "余姚中心区支行", "manager": "任永盛", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 133658.0, "deriv_revenue_yuan": 200.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波星以辰进出口有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 979340.0, "deriv_revenue_yuan": 87.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中瑞如意进出口有限公司", "branch": "湖东支行", "manager": "庄仕刚", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 140568.0, "deriv_revenue_yuan": 0.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "宁波美弘进出口有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 31430000.0, "deriv_revenue_yuan": 463671.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波侣依进出口有限公司", "branch": "明州支行", "manager": "崔贤", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 4028782.0, "deriv_revenue_yuan": 230619.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波翔欣家居用品进出口有限责任公司", "branch": "江北支行", "manager": "王令", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 10633519.0, "deriv_revenue_yuan": 218036.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波太一进出口贸易有限公司", "branch": "海曙支行", "manager": "陈君", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 68525700.0, "deriv_revenue_yuan": 195220.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波恒哲国际贸易有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3797207.0, "deriv_revenue_yuan": 147008.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江中大元通国际贸易有限公司", "branch": "科技支行", "manager": "解迪", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 22857759.0, "deriv_revenue_yuan": 144439.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波德乐供应链管理有限公司", "branch": "国家高新区支行", "manager": "陈蓉韵", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 11020000.0, "deriv_revenue_yuan": 134403.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波尚烯科技有限公司", "branch": "镇海支行", "manager": "胡强春", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 2801032.0, "deriv_revenue_yuan": 123094.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市镇海美联国际贸易服务有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 14409543.0, "deriv_revenue_yuan": 89700.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波联合燕华化工股份有限公司", "branch": "海曙支行", "manager": "", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 10500000.0, "deriv_revenue_yuan": 78260.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波杰士进出口有限公司", "branch": "海曙支行", "manager": "金涌洋", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2270000.0, "deriv_revenue_yuan": 77260.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波创酷国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "缪鸣夷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3842013.0, "deriv_revenue_yuan": 71865.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市镇海海湾石油化工有限公司", "branch": "海曙支行", "manager": "陈君", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 27172100.0, "deriv_revenue_yuan": 67633.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波宏渊国际贸易有限公司", "branch": "象山支行", "manager": "卓孝华", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4189894.0, "deriv_revenue_yuan": 63190.0, "opportunity_tags": "衍生首办种子", "suggested_action": "重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波崇盛进出口有限公司", "branch": "象山支行", "manager": "卓孝华", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 63100.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波通途国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "缪鸣夷", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 3222389.0, "deriv_revenue_yuan": 61245.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "东方锦维（宁波）国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 5506779.0, "deriv_revenue_yuan": 52995.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波晨新电子科技有限公司", "branch": "明州支行", "manager": "韩峰", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 8453940.0, "deriv_revenue_yuan": 52894.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波华茂国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 36704916.0, "deriv_revenue_yuan": 51400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波布利杰进出口有限公司", "branch": "鄞州支行", "manager": "傅雨", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4122000.0, "deriv_revenue_yuan": 46640.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波美博进出口有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 32000000.0, "deriv_revenue_yuan": 44690.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波美联外贸服务有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 14100000.0, "deriv_revenue_yuan": 44300.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波泛太机电有限公司", "branch": "镇海支行", "manager": "许黛慧", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3950000.0, "deriv_revenue_yuan": 44180.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波恒越进出口有限公司", "branch": "明州支行", "manager": "沈琦", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3740000.0, "deriv_revenue_yuan": 43176.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波中瑞进出口有限公司", "branch": "湖东支行", "manager": "庄仕刚", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 5410054.0, "deriv_revenue_yuan": 40840.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波凯美晨电子商务有限公司", "branch": "湖东支行", "manager": "陈绮", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 1015000.0, "deriv_revenue_yuan": 40600.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波萌恒前景进出口有限公司", "branch": "总行营业部", "manager": "金伊", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 6000000.0, "deriv_revenue_yuan": 40000.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波萌恒进出口有限公司", "branch": "总行营业部", "manager": "谢澄波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 4500000.0, "deriv_revenue_yuan": 36900.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波一舟进出口有限公司", "branch": "鄞州支行", "manager": "陈锡君", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 33600.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江天齐国际贸易集团有限公司", "branch": "国家高新区支行", "manager": "徐雍涛", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3754345.0, "deriv_revenue_yuan": 33042.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波萌恒工贸有限公司", "branch": "总行营业部", "manager": "谢澄波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 30400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市新琪阳服饰有限公司", "branch": "鄞州支行", "manager": "汪磊", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3710000.0, "deriv_revenue_yuan": 30319.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江大佰国际贸易有限公司", "branch": "海曙支行", "manager": "陈君", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 2453300.0, "deriv_revenue_yuan": 30176.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波凯笙电子商务有限公司", "branch": "湖东支行", "manager": "陈绮", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 725000.0, "deriv_revenue_yuan": 29290.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波晟盛日用品有限公司", "branch": "海曙支行", "manager": "陈栋君", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 776900.0, "deriv_revenue_yuan": 29098.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江五合进出口有限公司", "branch": "鄞州支行", "manager": "周哲皓", "segment": "战略客户", "industry": "零售业", "trade_volume_usd": 2418412.0, "deriv_revenue_yuan": 25490.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波元呈国际贸易有限公司", "branch": "明州支行", "manager": "陈怡丹", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 25400.0, "opportunity_tags": "衍生首办种子", "suggested_action": "重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波洋卡进出口有限公司", "branch": "镇海支行", "manager": "张玲", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1935352.0, "deriv_revenue_yuan": 23968.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波禧玛诺服装有限公司", "branch": "北仑支行", "manager": "盛巧璐", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 23600.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波星登进出口有限公司", "branch": "鄞州支行", "manager": "金宇涵", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2516800.0, "deriv_revenue_yuan": 22119.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波盘领实业有限公司", "branch": "科技支行", "manager": "潘城", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2686038.0, "deriv_revenue_yuan": 22060.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波达美世欣进出口有限公司", "branch": "海曙支行", "manager": "林龙", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2210000.0, "deriv_revenue_yuan": 21930.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市煜徽国际贸易有限公司", "branch": "四明支行", "manager": "周熹", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 963424.0, "deriv_revenue_yuan": 21861.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波易昌工业科技有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1897990.0, "deriv_revenue_yuan": 20644.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市甬江新区贝森贸易有限公司", "branch": "明州支行", "manager": "明州支行", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 19650.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波九隆国际贸易有限公司", "branch": "总行营业部", "manager": "白志浩", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2281854.0, "deriv_revenue_yuan": 19433.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市祥弘汽车销售服务有限公司", "branch": "湖东支行", "manager": "肖开凤", "segment": "战略客户", "industry": "零售业", "trade_volume_usd": 4788828.0, "deriv_revenue_yuan": 19400.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中哲国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "张真", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 18100.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波诚士通国际贸易有限公司", "branch": "明州支行", "manager": "戴晔", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2255430.0, "deriv_revenue_yuan": 16220.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市联凯化学有限公司", "branch": "鄞州支行", "manager": "陈薇", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 2436355.0, "deriv_revenue_yuan": 16200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市晨电电器科技有限公司", "branch": "慈溪中心区支行", "manager": "陈雯", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 384756.0, "deriv_revenue_yuan": 15992.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波博律得进出口有限公司", "branch": "象山支行", "manager": "竺琼", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 803700.0, "deriv_revenue_yuan": 15003.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "滚动狗（宁波）进出口有限公司", "branch": "明州支行", "manager": "殷颖", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1780000.0, "deriv_revenue_yuan": 14283.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波康大进出口有限公司", "branch": "四明支行", "manager": "顾亦琦", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2350000.0, "deriv_revenue_yuan": 13200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波新海威进出口有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1260000.0, "deriv_revenue_yuan": 12272.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波德赛国际贸易有限公司", "branch": "明州支行", "manager": "赵章敏", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1330000.0, "deriv_revenue_yuan": 12212.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波宏孚进出口有限公司", "branch": "宁海支行", "manager": "顾婷婷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1873202.0, "deriv_revenue_yuan": 11950.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "浙江美联医疗集团股份有限公司", "branch": "国家高新区支行", "manager": "陈潇楠", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 11900.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波海骥进出口贸易有限公司", "branch": "鄞州支行", "manager": "董刚军", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 382633.0, "deriv_revenue_yuan": 10948.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "慈溪市优创电器有限公司", "branch": "慈溪支行", "manager": "龚晔昀", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1300000.0, "deriv_revenue_yuan": 10300.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波新皕家居有限公司", "branch": "湖东支行", "manager": "郝星灿", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2160000.0, "deriv_revenue_yuan": 9835.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波朗月电器有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 9010.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市翔皇进出口有限公司", "branch": "宁海支行", "manager": "范逍峰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2274306.0, "deriv_revenue_yuan": 8850.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "恩凯控股有限公司", "branch": "科技支行", "manager": "戴嘉程", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2381547.0, "deriv_revenue_yuan": 8820.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江柏莱特纺织有限公司", "branch": "慈溪中心区支行", "manager": "施程升", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 392630.0, "deriv_revenue_yuan": 8664.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市振原进出口有限公司", "branch": "余姚中心区支行", "manager": "胡丹丹", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1681987.0, "deriv_revenue_yuan": 8633.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波优创文化用品有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 700000.0, "deriv_revenue_yuan": 8350.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波和煦进出口有限公司", "branch": "国家高新区支行", "manager": "朱寅栋", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1112187.0, "deriv_revenue_yuan": 7922.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波倍迅进出口有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 690000.0, "deriv_revenue_yuan": 7590.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波维能进出口有限公司", "branch": "科技支行", "manager": "严璟", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3068761.0, "deriv_revenue_yuan": 7530.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波嘉联进出口有限公司", "branch": "鄞州支行", "manager": "柴金益", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1543138.0, "deriv_revenue_yuan": 7529.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波维科工贸有限公司", "branch": "总行营业部", "manager": "陆耀生", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 1200000.0, "deriv_revenue_yuan": 7500.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波锐灏进出口有限公司", "branch": "江北支行", "manager": "张经天", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1450605.0, "deriv_revenue_yuan": 7372.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波爱孚迪国际贸易有限公司", "branch": "北仑支行", "manager": "史佳瑜", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 350000.0, "deriv_revenue_yuan": 7020.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波优翔国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "郑未", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 6870.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波统富进出口有限公司", "branch": "象山支行", "manager": "卓孝华", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 910000.0, "deriv_revenue_yuan": 6465.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波顽咖进出口有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 5860.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波意麟进出口有限公司", "branch": "明州支行", "manager": "戴晔", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 5790.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "丽水绿禾生物科技有限公司", "branch": "北仑支行", "manager": "江汉", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 4800000.0, "deriv_revenue_yuan": 5740.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波亿迅进出口有限公司", "branch": "鄞州中心区支行", "manager": "林捷", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 1150000.0, "deriv_revenue_yuan": 5497.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波美扬供应链管理有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3160000.0, "deriv_revenue_yuan": 5412.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波梦婷户外用品有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 220000.0, "deriv_revenue_yuan": 5320.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市众界无时电子商务有限公司", "branch": "明州支行", "manager": "邓娇瑜", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 890000.0, "deriv_revenue_yuan": 5096.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波伊孚丽雅儿童用品有限公司", "branch": "奉化支行", "manager": "胡琼", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 682571.0, "deriv_revenue_yuan": 5010.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市鄞州和创进出口有限公司", "branch": "明州支行", "manager": "薛宇智", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1230490.0, "deriv_revenue_yuan": 4890.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波嘉珀工贸有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 430000.0, "deriv_revenue_yuan": 4778.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波中孚国际贸易有限公司", "branch": "明州支行", "manager": "姜晓杰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 933000.0, "deriv_revenue_yuan": 4587.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波拓普立特进出口有限公司", "branch": "明州支行", "manager": "赵章敏", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 2338856.0, "deriv_revenue_yuan": 4500.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市熔鹏国际贸易有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 125797.0, "deriv_revenue_yuan": 4090.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波欧陆休闲用品有限公司", "branch": "总行营业部", "manager": "金伊", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 5380000.0, "deriv_revenue_yuan": 4052.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波优西户外用品有限公司", "branch": "宁海支行", "manager": "范逍峰", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 711294.0, "deriv_revenue_yuan": 3770.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波于归电子商务有限公司", "branch": "明州支行", "manager": "邓娇瑜", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 3730.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中厨日用品有限公司", "branch": "明州支行", "manager": "姜晓杰", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 661000.0, "deriv_revenue_yuan": 3721.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波品恩泰克科技有限公司", "branch": "湖东支行", "manager": "湖东支行", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 874500.0, "deriv_revenue_yuan": 3620.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波大欣化纤有限公司", "branch": "慈溪支行", "manager": "俞淑文", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 981000.0, "deriv_revenue_yuan": 3565.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波利唯进出口有限公司", "branch": "科技支行", "manager": "陈颖", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 3450.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波银康医疗器械有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 100000.0, "deriv_revenue_yuan": 3440.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波天辉纺织品有限公司", "branch": "科技支行", "manager": "林超", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 3160.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波摩嘉机械进出口有限公司", "branch": "余姚中心区支行", "manager": "余琰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 930144.0, "deriv_revenue_yuan": 3116.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波旷世居家进出口有限公司", "branch": "湖东支行", "manager": "蒋皓宇", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 150000.0, "deriv_revenue_yuan": 2985.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波风华国际贸易有限公司", "branch": "象山支行", "manager": "郑蓉", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 249086.0, "deriv_revenue_yuan": 2866.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波海曙亿丰通信设备有限公司", "branch": "明州支行", "manager": "张鲁彦", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 950000.0, "deriv_revenue_yuan": 2640.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波锦祥纺织品有限公司", "branch": "湖东支行", "manager": "林明森", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 150000.0, "deriv_revenue_yuan": 2595.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波殷派瑞尔进出口有限公司", "branch": "湖东支行", "manager": "胡心怡", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 68000.0, "deriv_revenue_yuan": 2312.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波梵森机械有限公司", "branch": "慈溪中心区支行", "manager": "", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 100000.0, "deriv_revenue_yuan": 2220.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波朝立进出口有限公司", "branch": "明州支行", "manager": "吕晓坤", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 2200.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市海曙区健升经贸有限公司", "branch": "北仑支行", "manager": "丁玮", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1495217.0, "deriv_revenue_yuan": 2092.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波赛艾科化工有限公司", "branch": "湖东支行", "manager": "肖开凤", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 650000.0, "deriv_revenue_yuan": 1920.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波森垚进出口有限公司", "branch": "江北支行", "manager": "胡哲", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1038000.0, "deriv_revenue_yuan": 1692.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波星洋进出口有限公司", "branch": "湖东支行", "manager": "周晓勤", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 976191.0, "deriv_revenue_yuan": 1595.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市洲复贸易有限责任公司", "branch": "镇海支行", "manager": "杨佳羽", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 450000.0, "deriv_revenue_yuan": 1575.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波胜锐特国际贸易有限公司", "branch": "科技支行", "manager": "李捷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 100000.0, "deriv_revenue_yuan": 1530.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波奕之泰进出口有限公司", "branch": "四明支行", "manager": "方宁生", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 893223.0, "deriv_revenue_yuan": 1510.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波脱凡体育科技有限公司", "branch": "明州支行", "manager": "叶倩男", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 1380.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "象山澜宇进出口有限公司", "branch": "象山支行", "manager": "许佳裕", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 155100.0, "deriv_revenue_yuan": 1241.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波龙光光学科技有限公司", "branch": "鄞州支行", "manager": "刘挺", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 57159.0, "deriv_revenue_yuan": 1086.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波统富服装品牌运营有限公司", "branch": "象山支行", "manager": "刘珂莹", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 116370.0, "deriv_revenue_yuan": 850.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波忠博宏业国际贸易有限公司", "branch": "鄞州中心区支行", "manager": "平新颖", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 300000.0, "deriv_revenue_yuan": 720.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "远大昌睿资源（浙江）有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 600.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市浩瑞成进出口有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1107961.0, "deriv_revenue_yuan": 580.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波亿和国际贸易有限公司", "branch": "湖东支行", "manager": "蔡晓芬", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1199608.0, "deriv_revenue_yuan": 510.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波美日智能电器科技有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 195000.0, "deriv_revenue_yuan": 332.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波美胜家居科技有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 250000.0, "deriv_revenue_yuan": 275.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波大川联合进出口有限公司", "branch": "科技支行", "manager": "胡博文", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 460000.0, "deriv_revenue_yuan": 220.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波星以辰进出口有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 979340.0, "deriv_revenue_yuan": 87.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波翎志进出口有限公司", "branch": "宁海支行", "manager": "王帅尹", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 10000.0, "deriv_revenue_yuan": 35.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}], "option": [{"customer_name": "宁波德业变频国际贸易有限公司", "branch": "总行营业部", "manager": "翁可扬", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 133443185.0, "deriv_revenue_yuan": 1168376.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波美弘进出口有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 31430000.0, "deriv_revenue_yuan": 463671.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波德储国际贸易有限公司", "branch": "总行营业部", "manager": "翁可扬", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 33379438.0, "deriv_revenue_yuan": 328320.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波翔欣家居用品进出口有限责任公司", "branch": "江北支行", "manager": "王令", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 10633519.0, "deriv_revenue_yuan": 218036.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波瑞生再升金属有限公司", "branch": "江北支行", "manager": "王薇薇", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 30919829.0, "deriv_revenue_yuan": 150500.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波瑞生资源集团有限公司", "branch": "四明支行", "manager": "任泽民", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 30000000.0, "deriv_revenue_yuan": 150500.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市镇海美联国际贸易服务有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 14409543.0, "deriv_revenue_yuan": 89700.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波宏渊国际贸易有限公司", "branch": "象山支行", "manager": "卓孝华", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 4189894.0, "deriv_revenue_yuan": 63190.0, "opportunity_tags": "衍生首办种子", "suggested_action": "重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波华茂国际贸易有限公司", "branch": "明州支行", "manager": "张泽硕", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 36704916.0, "deriv_revenue_yuan": 51400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波美联外贸服务有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 14100000.0, "deriv_revenue_yuan": 44300.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波泛太机电有限公司", "branch": "镇海支行", "manager": "许黛慧", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3950000.0, "deriv_revenue_yuan": 44180.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波禧玛诺服装有限公司", "branch": "北仑支行", "manager": "盛巧璐", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 23600.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波优创电器科技有限公司", "branch": "慈溪支行", "manager": "龚晔昀", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 830000.0, "deriv_revenue_yuan": 22063.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波盘领实业有限公司", "branch": "科技支行", "manager": "潘城", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2686038.0, "deriv_revenue_yuan": 22060.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波九隆国际贸易有限公司", "branch": "总行营业部", "manager": "白志浩", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2281854.0, "deriv_revenue_yuan": 19433.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波市海天斯进出口有限公司", "branch": "鄞州中心区支行", "manager": "李苏诺", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1120724.0, "deriv_revenue_yuan": 9817.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波爱孚德农产品有限公司", "branch": "北仑支行", "manager": "李雨婷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 880000.0, "deriv_revenue_yuan": 9634.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波雅克国际贸易有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1729298.0, "deriv_revenue_yuan": 8730.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波优创文化用品有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 700000.0, "deriv_revenue_yuan": 8350.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波顽咖进出口有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 5860.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波美扬供应链管理有限公司", "branch": "北仑支行", "manager": "曾飞波", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 3160000.0, "deriv_revenue_yuan": 5412.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波嘉珀工贸有限公司", "branch": "总行营业部", "manager": "沈骥之", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 430000.0, "deriv_revenue_yuan": 4778.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波优西户外用品有限公司", "branch": "宁海支行", "manager": "范逍峰", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 711294.0, "deriv_revenue_yuan": 3770.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波品恩泰克科技有限公司", "branch": "湖东支行", "manager": "湖东支行", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 874500.0, "deriv_revenue_yuan": 3620.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波朝立进出口有限公司", "branch": "明州支行", "manager": "吕晓坤", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 2200.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波恒特食品有限公司", "branch": "湖东支行", "manager": "陈绮", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 350000.0, "deriv_revenue_yuan": 434.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}], "combo_option": [{"customer_name": "宁波汉峰工业科技有限公司", "branch": "慈溪中心区支行", "manager": "李雨鸿", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 6000000.0, "deriv_revenue_yuan": 55030.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波利亿达贸易有限公司", "branch": "国家高新区支行", "manager": "庄杰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1086334.0, "deriv_revenue_yuan": 33800.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波派瑞特户外用品有限公司", "branch": "国家高新区支行", "manager": "庄杰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1231591.0, "deriv_revenue_yuan": 27405.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波优创电器科技有限公司", "branch": "慈溪支行", "manager": "龚晔昀", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 830000.0, "deriv_revenue_yuan": 22063.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波盘领实业有限公司", "branch": "科技支行", "manager": "潘城", "segment": "重点客户", "industry": "零售业", "trade_volume_usd": 2686038.0, "deriv_revenue_yuan": 22060.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波金丁工贸有限公司", "branch": "海曙支行", "manager": "王峰", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 2811234.0, "deriv_revenue_yuan": 15565.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波宏孚进出口有限公司", "branch": "宁海支行", "manager": "顾婷婷", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1873202.0, "deriv_revenue_yuan": 11950.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "慈溪市优创电器有限公司", "branch": "慈溪支行", "manager": "龚晔昀", "segment": "重点客户", "industry": "批发业", "trade_volume_usd": 1300000.0, "deriv_revenue_yuan": 10300.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波朗月电器有限公司", "branch": "海曙支行", "manager": "祝凯豪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 9010.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波简妮进出口有限公司", "branch": "科技支行", "manager": "解迪", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 914558.0, "deriv_revenue_yuan": 7270.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波天路进出口有限公司", "branch": "江北支行", "manager": "林剑成", "segment": "战略客户", "industry": "批发业", "trade_volume_usd": 3230000.0, "deriv_revenue_yuan": 6470.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波优西户外用品有限公司", "branch": "宁海支行", "manager": "范逍峰", "segment": "大众客户", "industry": "零售业", "trade_volume_usd": 711294.0, "deriv_revenue_yuan": 3770.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市佰迪优国际贸易有限公司", "branch": "海曙支行", "manager": "陈栋君", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 209562.0, "deriv_revenue_yuan": 1462.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波贝希进出口有限公司", "branch": "宁海支行", "manager": "应玖蓉", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 605900.0, "deriv_revenue_yuan": 1173.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波瑞冰进出口有限公司", "branch": "鄞州支行", "manager": "朱亦函", "segment": "大众客户", "industry": "批发业", "trade_volume_usd": 120000.0, "deriv_revenue_yuan": 462.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}]}}, "G2-装备制造类": {"name": "G2 装备制造类", "lists": {"forward": [{"customer_name": "安徽德姆勒科技股份有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 8200000.0, "deriv_revenue_yuan": 124243.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "安徽省万爱电器科技有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3030000.0, "deriv_revenue_yuan": 34040.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波联达绞盘有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 6000000.0, "deriv_revenue_yuan": 27500.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚市占凯电器有限公司", "branch": "余姚中心区支行", "manager": "杨挺", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3160000.0, "deriv_revenue_yuan": 24600.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波三Ａ集团电器有限公司", "branch": "慈溪支行", "manager": "黄郑栋", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3116050.0, "deriv_revenue_yuan": 23935.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波大虹科技股份有限公司", "branch": "鄞州支行", "manager": "刘奔", "segment": "大众客户", "industry": "金属制品业", "trade_volume_usd": 1494428.0, "deriv_revenue_yuan": 20607.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波蓝野医疗器械有限公司", "branch": "江北支行", "manager": "俞科斌", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 15700.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波艾肯智能科技有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 1860173.0, "deriv_revenue_yuan": 13146.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚市宏贸日用制品有限公司", "branch": "余姚中心区支行", "manager": "邵佳铱", "segment": "大众客户", "industry": "金属制品业", "trade_volume_usd": 857314.0, "deriv_revenue_yuan": 12065.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波毅腾电器有限公司", "branch": "余姚中心区支行", "manager": "任永盛", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 971000.0, "deriv_revenue_yuan": 6864.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波创跃园林工具有限公司", "branch": "奉化支行", "manager": "戴程辉", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 1100000.0, "deriv_revenue_yuan": 5540.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "余姚市亿盛金属制品有限公司", "branch": "余姚中心区支行", "manager": "任永盛", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 1050000.0, "deriv_revenue_yuan": 5505.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波浩嘉电器有限公司", "branch": "余姚中心区支行", "manager": "", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2254515.0, "deriv_revenue_yuan": 5412.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁海兴达旅游用品有限公司", "branch": "宁海支行", "manager": "周晓霞", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 500000.0, "deriv_revenue_yuan": 5075.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波班门电器有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3090000.0, "deriv_revenue_yuan": 4881.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江金本汽车零部件有限公司", "branch": "象山支行", "manager": "蒋瑛瑛", "segment": "重点客户", "industry": "汽车制造业", "trade_volume_usd": 474530.0, "deriv_revenue_yuan": 4132.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波西尼液晶支架制造有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 550000.0, "deriv_revenue_yuan": 3665.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波顺美金属制品有限公司", "branch": "奉化支行", "manager": "竺雷树", "segment": "大众客户", "industry": "专用设备制造业", "trade_volume_usd": 529600.0, "deriv_revenue_yuan": 2565.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市德霖机械有限公司", "branch": "江北支行", "manager": "张珊珊", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 1850.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波威仕消防设备有限公司", "branch": "余姚中心区支行", "manager": "", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 185808.0, "deriv_revenue_yuan": 1840.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波晶辉光电有限公司", "branch": "镇海支行", "manager": "", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 226891.0, "deriv_revenue_yuan": 1770.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}], "swap": [{"customer_name": "余姚市中宁电器有限公司", "branch": "余姚支行", "manager": "毛振宇", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 9838800.0, "deriv_revenue_yuan": 132250.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "安徽德姆勒科技股份有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 8200000.0, "deriv_revenue_yuan": 124243.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波博菱电器集团股份有限公司", "branch": "北仑支行", "manager": "魏之恒", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 10000000.0, "deriv_revenue_yuan": 118600.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波吉盛电器有限公司", "branch": "慈溪中心区支行", "manager": "范博慰", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 11000000.0, "deriv_revenue_yuan": 47200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "慈溪飞诺斯电子科技有限公司", "branch": "慈溪支行", "manager": "孙冬东", "segment": "大众客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2895000.0, "deriv_revenue_yuan": 44708.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波宜美日光精密制造有限公司", "branch": "余姚支行", "manager": "褚佳奕", "segment": "重点客户", "industry": "通用设备制造业", "trade_volume_usd": 3437753.0, "deriv_revenue_yuan": 40800.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "上海海连电动工具有限公司", "branch": "鄞州中心区支行", "manager": "陈麒任", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2250000.0, "deriv_revenue_yuan": 39550.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波大业动力机械有限公司", "branch": "余姚支行", "manager": "徐洪杰", "segment": "大众客户", "industry": "通用设备制造业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 35370.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "安徽省万爱电器科技有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3030000.0, "deriv_revenue_yuan": 34040.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波联达绞盘有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 6000000.0, "deriv_revenue_yuan": 27500.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚市占凯电器有限公司", "branch": "余姚中心区支行", "manager": "杨挺", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3160000.0, "deriv_revenue_yuan": 24600.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波爱科特厨房电器有限公司", "branch": "慈溪中心区支行", "manager": "毛晗晓", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 23944.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波三Ａ集团电器有限公司", "branch": "慈溪支行", "manager": "黄郑栋", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3116050.0, "deriv_revenue_yuan": 23935.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波凯峰电器有限公司", "branch": "慈溪支行", "manager": "", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 6000000.0, "deriv_revenue_yuan": 22400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波爱科特生活电器有限公司", "branch": "慈溪中心区支行", "manager": "陈薇", "segment": "战略客户", "industry": "专用设备制造业", "trade_volume_usd": 2310000.0, "deriv_revenue_yuan": 21905.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "安徽金帅洗衣机有限公司", "branch": "慈溪支行", "manager": "孙冬东", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3800000.0, "deriv_revenue_yuan": 19380.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波海浪电器有限公司", "branch": "慈溪中心区支行", "manager": "赵琳玲", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 1200000.0, "deriv_revenue_yuan": 19200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江中环赛特光伏科技有限公司", "branch": "慈溪支行", "manager": "邵金金", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 18000.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "爱柯迪股份有限公司", "branch": "江北支行", "manager": "陈凯敏", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 28972000.0, "deriv_revenue_yuan": 16500.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波蓝野医疗器械有限公司", "branch": "江北支行", "manager": "俞科斌", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 15700.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波艾肯智能科技有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 1860173.0, "deriv_revenue_yuan": 13146.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波润辰智能科技有限公司", "branch": "慈溪中心区支行", "manager": "陈雯", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 331143.0, "deriv_revenue_yuan": 13071.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波中哲储能技术有限公司", "branch": "鄞州中心区支行", "manager": "张真", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2235873.0, "deriv_revenue_yuan": 12400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "上海汇慧电子通讯有限公司", "branch": "慈溪支行", "manager": "孙冬东", "segment": "大众客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 795000.0, "deriv_revenue_yuan": 10566.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波奥普玛衡器有限公司", "branch": "镇海支行", "manager": "朱磊", "segment": "大众客户", "industry": "仪器仪表制造业", "trade_volume_usd": 610000.0, "deriv_revenue_yuan": 9676.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波万得弗铝箔科技有限公司", "branch": "余姚支行", "manager": "袁燕红", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 541330.0, "deriv_revenue_yuan": 8099.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波永强不锈钢制品有限公司", "branch": "余姚支行", "manager": "陈恬甜", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 6720.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波富恩特工具有限公司", "branch": "海曙支行", "manager": "陈良君", "segment": "大众客户", "industry": "通用设备制造业", "trade_volume_usd": 1029800.0, "deriv_revenue_yuan": 6123.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波创跃园林工具有限公司", "branch": "奉化支行", "manager": "戴程辉", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 1100000.0, "deriv_revenue_yuan": 5540.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波浩嘉电器有限公司", "branch": "余姚中心区支行", "manager": "", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2254515.0, "deriv_revenue_yuan": 5412.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波天翔汽车部件有限公司", "branch": "鄞州中心区支行", "manager": "郑未", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 5180.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁海兴达旅游用品有限公司", "branch": "宁海支行", "manager": "周晓霞", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 500000.0, "deriv_revenue_yuan": 5075.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江动一新能源动力科技股份有限公司", "branch": "明州支行", "manager": "崔贤", "segment": "重点客户", "industry": "通用设备制造业", "trade_volume_usd": 515867.0, "deriv_revenue_yuan": 4455.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波赤马绞盘有限公司", "branch": "鄞州支行", "manager": "陈轩斌", "segment": "重点客户", "industry": "汽车制造业", "trade_volume_usd": 4400000.0, "deriv_revenue_yuan": 4245.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江金本汽车零部件有限公司", "branch": "象山支行", "manager": "蒋瑛瑛", "segment": "重点客户", "industry": "汽车制造业", "trade_volume_usd": 474530.0, "deriv_revenue_yuan": 4132.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波国琅机器人科技有限公司", "branch": "宁海支行", "manager": "李善权", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 630000.0, "deriv_revenue_yuan": 3911.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波西尼液晶支架制造有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "金属制品业", "trade_volume_usd": 550000.0, "deriv_revenue_yuan": 3665.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波海伯安防科技有限公司", "branch": "北仑支行", "manager": "戴绅", "segment": "大众客户", "industry": "金属制品业", "trade_volume_usd": 800000.0, "deriv_revenue_yuan": 3040.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波富佳实业股份有限公司", "branch": "余姚支行", "manager": "徐彬彬", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 2200.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市镇海博力摩擦材料厂", "branch": "江北支行", "manager": "徐泽峰", "segment": "大众客户", "industry": "汽车制造业", "trade_volume_usd": 360000.0, "deriv_revenue_yuan": 1908.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市德霖机械有限公司", "branch": "江北支行", "manager": "张珊珊", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 1850.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波汉鸣科技有限公司", "branch": "余姚支行", "manager": "王剑雷", "segment": "大众客户", "industry": "通用设备制造业", "trade_volume_usd": 303140.0, "deriv_revenue_yuan": 1307.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波欣多电器有限公司", "branch": "镇海支行", "manager": "陈勍", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 500000.0, "deriv_revenue_yuan": 1150.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波友康照明电器有限公司", "branch": "余姚中心区支行", "manager": "童月思含", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 960000.0, "deriv_revenue_yuan": 330.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "五维（宁波）智能科技有限公司", "branch": "余姚支行", "manager": "王剑雷", "segment": "大众客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 276000.0, "deriv_revenue_yuan": 240.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}], "option": [{"customer_name": "余姚市中宁电器有限公司", "branch": "余姚支行", "manager": "毛振宇", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 9838800.0, "deriv_revenue_yuan": 132250.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "安徽德姆勒科技股份有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 8200000.0, "deriv_revenue_yuan": 124243.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波博菱电器集团股份有限公司", "branch": "北仑支行", "manager": "魏之恒", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 10000000.0, "deriv_revenue_yuan": 118600.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波宜美日光精密制造有限公司", "branch": "余姚支行", "manager": "褚佳奕", "segment": "重点客户", "industry": "通用设备制造业", "trade_volume_usd": 3437753.0, "deriv_revenue_yuan": 40800.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波爱科特厨房电器有限公司", "branch": "慈溪中心区支行", "manager": "毛晗晓", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 23944.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波万航实业有限公司", "branch": "北仑支行", "manager": "戴绅", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 10000000.0, "deriv_revenue_yuan": 23800.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波爱科特生活电器有限公司", "branch": "慈溪中心区支行", "manager": "陈薇", "segment": "战略客户", "industry": "专用设备制造业", "trade_volume_usd": 2310000.0, "deriv_revenue_yuan": 21905.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波海浪电器有限公司", "branch": "慈溪中心区支行", "manager": "赵琳玲", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 1200000.0, "deriv_revenue_yuan": 19200.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波中哲储能技术有限公司", "branch": "鄞州中心区支行", "manager": "张真", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 2235873.0, "deriv_revenue_yuan": 12400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波凯得利电器有限公司", "branch": "宁海支行", "manager": "伍玮俊", "segment": "大众客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 800000.0, "deriv_revenue_yuan": 7420.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}], "combo_option": [{"customer_name": "宁波尤利卡太阳能股份有限公司", "branch": "鄞州支行", "manager": "董刚军", "segment": "战略客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 3848026.0, "deriv_revenue_yuan": 22190.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波蓝野医疗器械有限公司", "branch": "江北支行", "manager": "俞科斌", "segment": "重点客户", "industry": "专用设备制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 15700.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波余通电器有限公司", "branch": "余姚支行", "manager": "严圣培", "segment": "重点客户", "industry": "电气机械和器材制造业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 3720.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江锐泰悬挂系统科技有限公司", "branch": "奉化支行", "manager": "俞薇", "segment": "战略客户", "industry": "汽车制造业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 3000.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}]}}, "G3-消费品制造类": {"name": "G3 消费品制造类", "lists": {"forward": [{"customer_name": "宁波市千虹服饰有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 8600000.0, "deriv_revenue_yuan": 36750.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波协同文创有限公司", "branch": "明州支行", "manager": "沈琦", "segment": "重点客户", "industry": "文教、工美、体育和娱乐用品制造业", "trade_volume_usd": 3825732.0, "deriv_revenue_yuan": 25632.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波兄弟服饰有限公司", "branch": "象山支行", "manager": "江婷婷", "segment": "战略客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 23400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市博林日用品制造有限公司", "branch": "奉化支行", "manager": "奉化支行营业部", "segment": "重点客户", "industry": "其他制造业", "trade_volume_usd": 3300000.0, "deriv_revenue_yuan": 19070.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波皇子玩具有限公司", "branch": "慈溪支行", "manager": "沈岱", "segment": "重点客户", "industry": "文教、工美、体育和娱乐用品制造业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 14100.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波凯丽安科技股份有限公司", "branch": "镇海支行", "manager": "王君娅", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 1140000.0, "deriv_revenue_yuan": 13317.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波钟声服饰实业有限公司", "branch": "鄞州中心区支行", "manager": "李苏诺", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 1505732.0, "deriv_revenue_yuan": 12370.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波德昌电器有限公司", "branch": "余姚中心区支行", "manager": "余姚中心区营业部", "segment": "战略客户", "industry": "家具制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 8400.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波新成鞋业有限公司", "branch": "宁海支行", "manager": "童江锋", "segment": "大众客户", "industry": "皮革、毛皮、羽毛及其制品和制鞋业", "trade_volume_usd": 169968.0, "deriv_revenue_yuan": 118.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "宁波市千虹服饰有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 8600000.0, "deriv_revenue_yuan": 36750.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波协同文创有限公司", "branch": "明州支行", "manager": "沈琦", "segment": "重点客户", "industry": "文教、工美、体育和娱乐用品制造业", "trade_volume_usd": 3825732.0, "deriv_revenue_yuan": 25632.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波兄弟服饰有限公司", "branch": "象山支行", "manager": "江婷婷", "segment": "战略客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 23400.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市博林日用品制造有限公司", "branch": "奉化支行", "manager": "奉化支行营业部", "segment": "重点客户", "industry": "其他制造业", "trade_volume_usd": 3300000.0, "deriv_revenue_yuan": 19070.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波皇子玩具有限公司", "branch": "慈溪支行", "manager": "沈岱", "segment": "重点客户", "industry": "文教、工美、体育和娱乐用品制造业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 14100.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波凯丽安科技股份有限公司", "branch": "镇海支行", "manager": "王君娅", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 1140000.0, "deriv_revenue_yuan": 13317.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波统富纺织服装科技有限公司", "branch": "象山支行", "manager": "卓孝华", "segment": "大众客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 1110000.0, "deriv_revenue_yuan": 8412.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波德昌电器有限公司", "branch": "余姚中心区支行", "manager": "余姚中心区营业部", "segment": "战略客户", "industry": "家具制造业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 8400.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波市攸曼儿童防护用品有限公司", "branch": "北仑支行", "manager": "吴秋果", "segment": "大众客户", "industry": "文教、工美、体育和娱乐用品制造业", "trade_volume_usd": 220000.0, "deriv_revenue_yuan": 6930.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波晨尚时装有限公司", "branch": "象山支行", "manager": "楼志强", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 6280.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "兰溪市欧丽服饰有限公司", "branch": "明州支行", "manager": "", "segment": "大众客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 293793.0, "deriv_revenue_yuan": 5171.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波创新顺元服饰有限公司", "branch": "象山支行", "manager": "盛玲珍", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 700000.0, "deriv_revenue_yuan": 5040.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波宁澳服饰有限公司", "branch": "湖东支行", "manager": "郑雁尹", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 830000.0, "deriv_revenue_yuan": 2656.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波欧陆创意家居股份有限公司", "branch": "总行营业部", "manager": "金伊", "segment": "重点客户", "industry": "家具制造业", "trade_volume_usd": 2750000.0, "deriv_revenue_yuan": 1760.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波家天下家具科技有限公司", "branch": "余姚支行", "manager": "徐彬彬", "segment": "大众客户", "industry": "家具制造业", "trade_volume_usd": 350000.0, "deriv_revenue_yuan": 910.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}], "option": [{"customer_name": "宁波钟声服饰实业有限公司", "branch": "鄞州中心区支行", "manager": "李苏诺", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 1505732.0, "deriv_revenue_yuan": 12370.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "兰溪市欧丽服饰有限公司", "branch": "明州支行", "manager": "", "segment": "大众客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 293793.0, "deriv_revenue_yuan": 5171.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "象山嘉琳服饰有限公司", "branch": "象山支行", "manager": "象山支行营业部", "segment": "大众客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 240621.0, "deriv_revenue_yuan": 1610.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波家天下家具科技有限公司", "branch": "余姚支行", "manager": "徐彬彬", "segment": "大众客户", "industry": "家具制造业", "trade_volume_usd": 350000.0, "deriv_revenue_yuan": 910.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}], "combo_option": [{"customer_name": "宁波市千虹服饰有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "纺织服装、服饰业", "trade_volume_usd": 8600000.0, "deriv_revenue_yuan": 36750.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波胜德家具有限公司", "branch": "江北支行", "manager": "江北支行营业部", "segment": "重点客户", "industry": "家具制造业", "trade_volume_usd": 396300.0, "deriv_revenue_yuan": 1320.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}]}}, "G4-高端制造电子类": {"name": "G4 高端制造电子类", "lists": {"forward": [{"customer_name": "宁波麦度智联科技股份有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 15450.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "宁波欧达光电有限公司", "branch": "鄞州支行", "manager": "张磊", "segment": "战略客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 46921200.0, "deriv_revenue_yuan": 196500.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波埃斯科光电有限公司", "branch": "北仑支行", "manager": "孙世枫", "segment": "大众客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 1450000.0, "deriv_revenue_yuan": 35350.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "浙江人和光伏科技有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "大众客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 5000000.0, "deriv_revenue_yuan": 26300.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波麦度智联科技股份有限公司", "branch": "奉化支行", "manager": "", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 15450.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波广瑞通信技术有限公司", "branch": "慈溪支行", "manager": "黄若栋", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 12700.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波华楷电子科技有限公司", "branch": "慈溪支行", "manager": "孙冬东", "segment": "大众客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 900000.0, "deriv_revenue_yuan": 2970.0, "opportunity_tags": "金管家空户、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江西文智能科技有限公司", "branch": "慈溪中心区支行", "manager": "冯凯杰", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 750000.0, "deriv_revenue_yuan": 2925.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波东方电子有限公司", "branch": "鄞州支行", "manager": "蔡勇", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 980000.0, "deriv_revenue_yuan": 1605.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}], "option": [{"customer_name": "宁波欧达光电有限公司", "branch": "鄞州支行", "manager": "张磊", "segment": "战略客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 46921200.0, "deriv_revenue_yuan": 196500.0, "opportunity_tags": "无", "suggested_action": "常规维护"}], "combo_option": [{"customer_name": "宁波欧达光电有限公司", "branch": "鄞州支行", "manager": "张磊", "segment": "战略客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 46921200.0, "deriv_revenue_yuan": 196500.0, "opportunity_tags": "无", "suggested_action": "常规维护"}, {"customer_name": "宁波鲨鱼电子有限公司", "branch": "明州支行", "manager": "汪丹益", "segment": "大众客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 6550.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波经纬数控股份有限公司", "branch": "国家高新区支行", "manager": "国家高新区支行", "segment": "重点客户", "industry": "计算机、通信和其他电子设备制造业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 3420.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}]}}, "G5-化工医药类": {"name": "G5 化工医药类", "lists": {"forward": [{"customer_name": "浙江美源新材料股份有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "化学纤维制造业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 21300.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波爱诗化妆品有限公司", "branch": "余姚支行", "manager": "褚佳奕", "segment": "战略客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 9680.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波霖华塑胶有限公司", "branch": "奉化支行", "manager": "俞薇", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 1550000.0, "deriv_revenue_yuan": 7988.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波双马日用品有限公司", "branch": "明州支行", "manager": "明州支行", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 6650.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚努虎洁具有限公司", "branch": "鄞州支行", "manager": "蔡勇", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 794652.0, "deriv_revenue_yuan": 4740.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江优肯包装有限公司", "branch": "余姚中心区支行", "manager": "任永盛", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 3200.0, "opportunity_tags": "衍生首办种子", "suggested_action": "重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波斯迈克制药有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "大众客户", "industry": "医药制造业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 2210.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波楷塑材料科技有限公司", "branch": "明州支行", "manager": "邓娇瑜", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 99900.0, "deriv_revenue_yuan": 1798.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚市绿亚工具有限公司", "branch": "余姚中心区支行", "manager": "任永盛", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 470000.0, "deriv_revenue_yuan": 1200.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "浙江晟祺实业有限公司", "branch": "余姚支行", "manager": "施骏", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 400000.0, "deriv_revenue_yuan": 880.0, "opportunity_tags": "海关大户回流、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "浙江美源新材料股份有限公司", "branch": "慈溪支行", "manager": "", "segment": "重点客户", "industry": "化学纤维制造业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 21300.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波市镇海海德生化科技有限公司", "branch": "江北支行", "manager": "张经天", "segment": "大众客户", "industry": "医药制造业", "trade_volume_usd": 1300000.0, "deriv_revenue_yuan": 15870.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波振飞窗饰制品有限公司", "branch": "余姚中心区支行", "manager": "黄佳恒", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 8500000.0, "deriv_revenue_yuan": 14250.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波市镇海泰达化工有限公司", "branch": "海曙支行", "manager": "陈君", "segment": "战略客户", "industry": "化学原料和化学制品制造业", "trade_volume_usd": 17638800.0, "deriv_revenue_yuan": 13561.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "余姚市亚东塑业有限公司", "branch": "余姚支行", "manager": "严圣培", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 12270.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波爱诗化妆品有限公司", "branch": "余姚支行", "manager": "褚佳奕", "segment": "战略客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 3000000.0, "deriv_revenue_yuan": 9680.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波霖华塑胶有限公司", "branch": "奉化支行", "manager": "俞薇", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 1550000.0, "deriv_revenue_yuan": 7988.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波双马日用品有限公司", "branch": "明州支行", "manager": "明州支行", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 6650.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波斯迈克制药有限公司", "branch": "鄞州中心区支行", "manager": "鄞州中心区营业部", "segment": "大众客户", "industry": "医药制造业", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 2210.0, "opportunity_tags": "金管家空户、海关大户回流、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波爱如斯智能科技有限公司", "branch": "宁海支行", "manager": "李善权", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 150000.0, "deriv_revenue_yuan": 1095.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波蝶琪电子科技有限公司", "branch": "余姚支行", "manager": "周晓天", "segment": "大众客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 90000.0, "deriv_revenue_yuan": 945.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "浙江雅颜生物科技股份有限公司", "branch": "宁海支行", "manager": "伍玮俊", "segment": "战略客户", "industry": "化学原料和化学制品制造业", "trade_volume_usd": 1000000.0, "deriv_revenue_yuan": 700.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}], "option": [{"customer_name": "宁波圣宇瑞医疗器械有限公司", "branch": "总行营业部", "manager": "倪嘉媛", "segment": "重点客户", "industry": "医药制造业", "trade_volume_usd": 24000000.0, "deriv_revenue_yuan": 53200.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "余姚市亚东塑业有限公司", "branch": "余姚支行", "manager": "严圣培", "segment": "重点客户", "industry": "橡胶和塑料制品业", "trade_volume_usd": 600000.0, "deriv_revenue_yuan": 12270.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}], "combo_option": [{"customer_name": "宁波圣宇瑞医疗器械有限公司", "branch": "总行营业部", "manager": "倪嘉媛", "segment": "重点客户", "industry": "医药制造业", "trade_volume_usd": 24000000.0, "deriv_revenue_yuan": 53200.0, "opportunity_tags": "海关大户回流、新客培育、衍生首办种子", "suggested_action": "支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}]}}, "G6-物流代理类": {"name": "G6 物流代理类", "lists": {"forward": [{"customer_name": "浙江鸿途供应链管理有限公司", "branch": "明州支行", "manager": "姜晓杰", "segment": "大众客户", "industry": "多式联运和运输代理业", "trade_volume_usd": 117200.0, "deriv_revenue_yuan": 2180.0, "opportunity_tags": "新客培育、衍生首办种子", "suggested_action": "30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "宁波顺圆物流有限公司", "branch": "总行营业部", "manager": "刘静", "segment": "大众客户", "industry": "道路运输业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 7100.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "浙江华艺供应链管理有限公司", "branch": "鄞州支行", "manager": "钱燕", "segment": "战略客户", "industry": "装卸搬运和仓储业", "trade_volume_usd": 1190771.0, "deriv_revenue_yuan": 5120.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}, {"customer_name": "宁波航晖运通国际物流有限公司", "branch": "鄞州支行", "manager": "柴金益", "segment": "大众客户", "industry": "多式联运和运输代理业", "trade_volume_usd": 290000.0, "deriv_revenue_yuan": 4122.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波纳斯国际货运代理有限公司", "branch": "四明支行", "manager": "朱再冉", "segment": "大众客户", "industry": "多式联运和运输代理业", "trade_volume_usd": 272333.0, "deriv_revenue_yuan": 341.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}], "option": [{"customer_name": "宁波顺圆物流有限公司", "branch": "总行营业部", "manager": "刘静", "segment": "大众客户", "industry": "道路运输业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 7100.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}, {"customer_name": "宁波北辰国际物流有限公司", "branch": "鄞州中心区支行", "manager": "余颖", "segment": "大众客户", "industry": "多式联运和运输代理业", "trade_volume_usd": 230000.0, "deriv_revenue_yuan": 150.0, "opportunity_tags": "金管家空户、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；重点跟进，推数字化产品+复杂衍生"}], "combo_option": [{"customer_name": "宁波市仁丰国际货运代理有限公司", "branch": "明州支行", "manager": "赵章敏", "segment": "大众客户", "industry": "多式联运和运输代理业", "trade_volume_usd": 11568000.0, "deriv_revenue_yuan": 141380.0, "opportunity_tags": "金管家空户、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；推荐高收益/多产品组合"}, {"customer_name": "宁波瑞鲲航运有限公司", "branch": "象山支行", "manager": "蒋瑛瑛", "segment": "大众客户", "industry": "水上运输业", "trade_volume_usd": 2150000.0, "deriv_revenue_yuan": 3600.0, "opportunity_tags": "金管家空户", "suggested_action": "回访激活金管家，了解不用原因"}]}}, "G7-服务业类": {"name": "G7 服务业类", "lists": {"forward": [{"customer_name": "浙江自贸区美格供应链管理有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "商务服务业", "trade_volume_usd": 17550000.0, "deriv_revenue_yuan": 125510.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江中乐进出口有限公司", "branch": "鄞州支行", "manager": "周哲皓", "segment": "战略客户", "industry": "商务服务业", "trade_volume_usd": 3370718.0, "deriv_revenue_yuan": 18059.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}], "swap": [{"customer_name": "浙江自贸区美格供应链管理有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "商务服务业", "trade_volume_usd": 17550000.0, "deriv_revenue_yuan": 125510.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}, {"customer_name": "浙江中乐进出口有限公司", "branch": "鄞州支行", "manager": "周哲皓", "segment": "战略客户", "industry": "商务服务业", "trade_volume_usd": 3370718.0, "deriv_revenue_yuan": 18059.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合；重点跟进，推数字化产品+复杂衍生"}], "option": [{"customer_name": "浙江自贸区美格供应链管理有限公司", "branch": "四明支行", "manager": "黄昊天", "segment": "战略客户", "industry": "商务服务业", "trade_volume_usd": 17550000.0, "deriv_revenue_yuan": 125510.0, "opportunity_tags": "海关大户回流", "suggested_action": "支行长带队拜访，撬回外汇业务"}], "combo_option": [{"customer_name": "宁波依斐逊进出口有限公司", "branch": "江北支行", "manager": "徐泽峰", "segment": "大众客户", "industry": "互联网和相关服务", "trade_volume_usd": 200000.0, "deriv_revenue_yuan": 880.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}]}}, "G8-长尾其他类": {"name": "G8 长尾其他类", "lists": {"forward": [{"customer_name": "慈溪市金威铜业有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "战略客户", "industry": "有色金属冶炼和压延加工业", "trade_volume_usd": 2433135.0, "deriv_revenue_yuan": 10604.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}], "swap": [{"customer_name": "宁波玉健健康科技股份有限公司", "branch": "北仑支行", "manager": "刘扬", "segment": "战略客户", "industry": "农副食品加工业", "trade_volume_usd": 4000000.0, "deriv_revenue_yuan": 6800.0, "opportunity_tags": "金管家空户、海关大户回流、新客培育、衍生首办种子", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；30天内回访，3个月内推第二产品；重点跟进，推数字化产品+复杂衍生"}, {"customer_name": "宁波杰顺生物科技有限公司", "branch": "北仑支行", "manager": "丁玮", "segment": "大众客户", "industry": "农副食品加工业", "trade_volume_usd": 452255.0, "deriv_revenue_yuan": 633.0, "opportunity_tags": "金管家空户、海关大户回流", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务"}], "option": [{"customer_name": "慈溪市金威铜业有限公司", "branch": "慈溪支行", "manager": "倪莹莹", "segment": "战略客户", "industry": "有色金属冶炼和压延加工业", "trade_volume_usd": 2433135.0, "deriv_revenue_yuan": 10604.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}, {"customer_name": "宁波天韵食品有限公司", "branch": "象山支行", "manager": "", "segment": "重点客户", "industry": "食品制造业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 3400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}], "combo_option": [{"customer_name": "宁波天韵食品有限公司", "branch": "象山支行", "manager": "", "segment": "重点客户", "industry": "食品制造业", "trade_volume_usd": 2000000.0, "deriv_revenue_yuan": 3400.0, "opportunity_tags": "金管家空户、海关大户回流、忠诚度转化", "suggested_action": "回访激活金管家，了解不用原因；支行长带队拜访，撬回外汇业务；推荐高收益/多产品组合"}]}}};
+const productLabels = {
+  forward: '有远期',
+  swap: '有掉期',
+  option: '有期权',
+  combo_option: '组合期权'
+};
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function formatNumber(value) {
+  const n = Number(value || 0);
+  return n.toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+}
+
+function closeProductModal() {
+  const modal = document.getElementById('product-modal');
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function openProductModal(group, product) {
+  const groupData = productCustomerLists[group] || {};
+  const rows = (groupData.lists && groupData.lists[product]) || [];
+  const title = `${groupData.name || group} · ${productLabels[product] || product} · ${rows.length}户`;
+  document.getElementById('product-modal-title').textContent = title;
+
+  const body = document.getElementById('product-modal-body');
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty-detail">暂无命中客户</div>';
+  } else {
+    body.innerHTML = `
+      <table class="customer-table">
+        <thead>
+          <tr>
+            <th>客户名称</th><th>一级机构</th><th>管户人</th><th>分层</th><th>行业小类</th>
+            <th>外汇交易量(美元)</th><th>衍生收益(元)</th><th>商机标签</th><th>建议动作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `
+            <tr>
+              <td class="wrap">${escapeHtml(row.customer_name)}</td>
+              <td>${escapeHtml(row.branch)}</td>
+              <td>${escapeHtml(row.manager)}</td>
+              <td>${escapeHtml(row.segment)}</td>
+              <td class="wrap">${escapeHtml(row.industry)}</td>
+              <td class="num">${formatNumber(row.trade_volume_usd)}</td>
+              <td class="num">${formatNumber(row.deriv_revenue_yuan)}</td>
+              <td class="wrap">${escapeHtml(row.opportunity_tags)}</td>
+              <td class="wrap">${escapeHtml(row.suggested_action)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  const modal = document.getElementById('product-modal');
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+document.querySelectorAll('.product-row').forEach((row) => {
+  row.addEventListener('click', () => openProductModal(row.dataset.group, row.dataset.product));
+});
+document.getElementById('product-modal-close').addEventListener('click', closeProductModal);
+document.getElementById('product-modal').addEventListener('click', (event) => {
+  if (event.target.id === 'product-modal') closeProductModal();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeProductModal();
+});
+
+new Chart(document.getElementById('chart-customer'), barConfig(groupNames, custData, groupColors, '客户数'));
+new Chart(document.getElementById('chart-volume'), barConfig(groupNames, volData, groupColors, '交易量(亿美元)'));
+new Chart(document.getElementById('chart-revenue'), barConfig(groupNames, revData, groupColors, '收益(万元)'));
+new Chart(document.getElementById('chart-deriv'), barConfig(groupNames, derivData, groupColors, '衍生渗透率(%)'));
+</script>
+</body>
+</html>
